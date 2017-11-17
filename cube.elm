@@ -20,14 +20,14 @@ type alias Model =
 
 
 type alias Msg =
-    Float
+    Time
 
 
 init =
     ( 0, Cmd.none )
 
 
-view : Model -> Html Time
+view : Model -> Html Msg
 view theta =
     WebGL.toHtml
         [ width 750
@@ -42,7 +42,7 @@ view theta =
         ]
 
 
-subscriptions : Model -> Sub Time
+subscriptions : Model -> Sub Msg
 subscriptions _ =
     AnimationFrame.diffs Basics.identity
 
@@ -52,7 +52,7 @@ update dt theta =
     ( theta + dt / 1000, Cmd.none )
 
 
-main : Program Never Float Time
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
@@ -83,7 +83,7 @@ type alias Varyings =
     }
 
 
-uniforms : Float -> Uniforms
+uniforms : Model -> Uniforms
 uniforms theta =
     { rotation = (Mat4.makeRotate -theta (vec3 0 1 0))
     , perspective = Mat4.makePerspective 45 (3 / 2) 0.01 100
