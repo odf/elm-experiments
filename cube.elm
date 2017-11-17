@@ -9,6 +9,7 @@ import Color exposing (Color)
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
@@ -63,7 +64,8 @@ main =
 
 type alias Vertex =
     { color : Vec3
-    , position : Vec3
+    , pos : Vec3
+    , posUV : Vec2
     }
 
 
@@ -76,7 +78,9 @@ type alias Uniforms =
 
 
 type alias Varyings =
-    { vcolor : Vec3 }
+    { vcolor : Vec3
+    , vposUV : Vec2
+    }
 
 
 uniforms : Float -> Uniforms
@@ -143,11 +147,11 @@ face rawColor a b c d =
                     (toFloat c.green / 255)
                     (toFloat c.blue / 255)
 
-        vertex position =
-            Vertex color position
+        vertex position u v =
+            Vertex color position (vec2 u v)
     in
-        [ ( vertex a, vertex b, vertex c )
-        , ( vertex c, vertex d, vertex a )
+        [ ( vertex a 0 0, vertex b 1 0, vertex c 1 1 )
+        , ( vertex c 1 1, vertex d 0 1, vertex a 0 0 )
         ]
 
 
@@ -159,16 +163,19 @@ vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
 
-    attribute vec3 position;
     attribute vec3 color;
+    attribute vec3 pos;
+    attribute vec2 posUV;
     uniform mat4 perspective;
     uniform mat4 camera;
     uniform mat4 rotation;
     varying vec3 vcolor;
+    varying vec2 vposUV;
 
     void main () {
-        gl_Position = perspective * camera * rotation * vec4(position, 1.0);
         vcolor = color;
+        vposUV = posUV;
+        gl_Position = perspective * camera * rotation * vec4(pos, 1.0);
     }
 
     |]
@@ -181,9 +188,15 @@ fragmentShader =
     precision mediump float;
     uniform float shade;
     varying vec3 vcolor;
+    varying vec2 vposUV;
+
+    float PI=3.1415926535;
 
     void main () {
-        gl_FragColor = shade * vec4(vcolor, 1.0);
+        float f1 = sin((vposUV.x + vposUV.y) * 3.0 * PI);
+        float f2 = sin((vposUV.x - vposUV.y) * 3.0 * PI);
+        float f = (fract(f1 * f2 * 3.0) * 0.3) + 0.5;
+        gl_FragColor = vec4(f * vcolor, 1.0);
     }
 
     |]
