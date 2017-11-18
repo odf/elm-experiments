@@ -1,9 +1,5 @@
 module Main exposing (main)
 
-{-
-   Rotating cube with colored sides.
--}
-
 import AnimationFrame
 import Color exposing (Color)
 import Html exposing (Html)
@@ -19,6 +15,7 @@ import WebGL exposing (Mesh, Shader)
 type alias Model =
     { time : Float
     , mousePos : Mouse.Position
+    , mesh : Mesh Vertex
     }
 
 
@@ -27,30 +24,45 @@ type Msg
     | MouseMsg Mouse.Position
 
 
+frameWidth : Int
+frameWidth =
+    750
+
+
+frameHeight : Int
+frameHeight =
+    500
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { time = 0, mousePos = { x = 250, y = 375 } }, Cmd.none )
+    ( { time = 0
+      , mousePos = { x = frameWidth // 2, y = frameHeight // 2 }
+      , mesh = cubeMesh
+      }
+    , Cmd.none
+    )
 
 
 view : Model -> Html Msg
-view theta =
+view model =
     WebGL.toHtml
-        [ width 750
-        , height 500
+        [ width frameWidth
+        , height frameHeight
         , style [ ( "display", "block" ), ( "background", "black" ) ]
         ]
         [ WebGL.entity
             vertexShader
             fragmentShader
-            cubeMesh
-            (uniforms theta)
+            model.mesh
+            (uniforms model)
         ]
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ AnimationFrame.diffs FrameMsg
+        [ AnimationFrame.times FrameMsg
         , Mouse.moves MouseMsg
         ]
 
@@ -59,7 +71,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FrameMsg time ->
-            ( { model | time = model.time + time / 1000 }, Cmd.none )
+            ( { model | time = time / 1000 }, Cmd.none )
 
         MouseMsg pos ->
             ( { model | mousePos = pos }, Cmd.none )
@@ -99,13 +111,13 @@ camera : Mouse.Position -> Mat4
 camera pos =
     let
         camX =
-            (pos.x - 375 |> toFloat) / 80
+            pos.x * 2 - frameWidth |> toFloat
 
         camY =
-            (250 - pos.y |> toFloat) / 80
+            frameHeight - pos.y * 2 |> toFloat
 
         cameraPos =
-            vec3 camX camY 5 |> Vec3.normalize |> Vec3.scale 5
+            vec3 camX camY 400 |> Vec3.normalize |> Vec3.scale 5
     in
         Mat4.makeLookAt cameraPos (vec3 0 0 0) (vec3 0 1 0)
 
@@ -220,7 +232,7 @@ fragmentShader =
     void main () {
         float f1 = sin((vposUV.x + vposUV.y) * 3.0 * PI);
         float f2 = sin((vposUV.x - vposUV.y) * 3.0 * PI);
-        float f = (fract(f1 * f2 * 3.0) * 0.3) + 0.5;
+        float f = (sin(sin(f1 * f2 * 3.0) * 3.0) * 0.2) + 0.8;
         gl_FragColor = vec4(f * vcolor, 1.0);
     }
 
