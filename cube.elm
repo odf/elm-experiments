@@ -11,20 +11,25 @@ import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Mouse
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
 
 
 type alias Model =
-    Float
+    { time : Float
+    , mousePos : Mouse.Position
+    }
 
 
-type alias Msg =
-    Time
+type Msg
+    = FrameMsg Time
+    | MouseMsg Mouse.Position
 
 
+init : ( Model, Cmd Msg )
 init =
-    ( 0, Cmd.none )
+    ( { time = 0, mousePos = { x = 250, y = 375 } }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -44,12 +49,20 @@ view theta =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    AnimationFrame.diffs Basics.identity
+    Sub.batch
+        [ AnimationFrame.diffs FrameMsg
+        , Mouse.moves MouseMsg
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update dt theta =
-    ( theta + dt / 1000, Cmd.none )
+update msg model =
+    case msg of
+        FrameMsg time ->
+            ( { model | time = model.time + time / 1000 }, Cmd.none )
+
+        MouseMsg pos ->
+            ( { model | mousePos = pos }, Cmd.none )
 
 
 main : Program Never Model Msg
@@ -73,7 +86,6 @@ type alias Uniforms =
     { rotation : Mat4
     , perspective : Mat4
     , camera : Mat4
-    , shade : Float
     }
 
 
@@ -83,12 +95,26 @@ type alias Varyings =
     }
 
 
+camera : Mouse.Position -> Mat4
+camera pos =
+    let
+        camX =
+            (pos.x - 375 |> toFloat) / 80
+
+        camY =
+            (250 - pos.y |> toFloat) / 80
+
+        cameraPos =
+            vec3 camX camY 5 |> Vec3.normalize |> Vec3.scale 5
+    in
+        Mat4.makeLookAt cameraPos (vec3 0 0 0) (vec3 0 1 0)
+
+
 uniforms : Model -> Uniforms
-uniforms theta =
-    { rotation = (Mat4.makeRotate -theta (vec3 0 1 0))
+uniforms model =
+    { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
     , perspective = Mat4.makePerspective 45 (3 / 2) 0.01 100
-    , camera = Mat4.makeLookAt (vec3 0 0 5) (vec3 0 0 0) (vec3 0 1 0)
-    , shade = 0.8
+    , camera = camera model.mousePos
     }
 
 
@@ -186,7 +212,6 @@ fragmentShader =
     [glsl|
 
     precision mediump float;
-    uniform float shade;
     varying vec3 vcolor;
     varying vec2 vposUV;
 
