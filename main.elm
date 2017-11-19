@@ -1,7 +1,6 @@
 module Main exposing (main)
 
 import AnimationFrame
-import Color exposing (Color)
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
@@ -10,6 +9,7 @@ import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
+import Cube exposing (cube, Vertex)
 
 
 type alias Model =
@@ -38,7 +38,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { time = 0
       , mousePos = { x = frameWidth // 2, y = frameHeight // 2 }
-      , mesh = cubeMesh
+      , mesh = cube
       }
     , Cmd.none
     )
@@ -87,13 +87,6 @@ main =
         }
 
 
-type alias Vertex =
-    { color : Vec3
-    , pos : Vec3
-    , posUV : Vec2
-    }
-
-
 type alias Uniforms =
     { rotation : Mat4
     , perspective : Mat4
@@ -128,69 +121,6 @@ uniforms model =
     , perspective = Mat4.makePerspective 45 (3 / 2) 0.01 100
     , camera = camera model.mousePos
     }
-
-
-
--- Mesh
-
-
-cubeMesh : Mesh Vertex
-cubeMesh =
-    let
-        rft =
-            vec3 1 1 1
-
-        lft =
-            vec3 -1 1 1
-
-        lbt =
-            vec3 -1 -1 1
-
-        rbt =
-            vec3 1 -1 1
-
-        rbb =
-            vec3 1 -1 -1
-
-        rfb =
-            vec3 1 1 -1
-
-        lfb =
-            vec3 -1 1 -1
-
-        lbb =
-            vec3 -1 -1 -1
-    in
-        [ face Color.green rft rfb rbb rbt
-        , face Color.blue rft rfb lfb lft
-        , face Color.yellow rft lft lbt rbt
-        , face Color.red rfb lfb lbb rbb
-        , face Color.purple lft lfb lbb lbt
-        , face Color.orange rbt rbb lbb lbt
-        ]
-            |> List.concat
-            |> WebGL.triangles
-
-
-face : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
-face rawColor a b c d =
-    let
-        color =
-            let
-                c =
-                    Color.toRgb rawColor
-            in
-                vec3
-                    (toFloat c.red / 255)
-                    (toFloat c.green / 255)
-                    (toFloat c.blue / 255)
-
-        vertex position u v =
-            Vertex color position (vec2 u v)
-    in
-        [ ( vertex a 0 0, vertex b 1 0, vertex c 1 1 )
-        , ( vertex c 1 1, vertex d 0 1, vertex a 0 0 )
-        ]
 
 
 
