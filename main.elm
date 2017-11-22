@@ -7,9 +7,10 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
-import Window
+import Task
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
+import Window
 import Cube exposing (cube, Vertex)
 
 
@@ -29,12 +30,12 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { size = { width = 750, height = 500 }
+    ( { size = { width = 0, height = 0 }
       , time = 0
-      , mousePos = { x = 375, y = 250 }
+      , mousePos = { x = 0, y = 0 }
       , mesh = cube
       }
-    , Cmd.none
+    , Task.perform Resize Window.size
     )
 
 
