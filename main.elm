@@ -22,7 +22,8 @@ type alias Model =
 
 
 type Msg
-    = FrameMsg Time
+    = Resize Window.Size
+    | FrameMsg Time
     | MouseMsg Mouse.Position
 
 
@@ -55,7 +56,8 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ AnimationFrame.times FrameMsg
+        [ Window.resizes Resize
+        , AnimationFrame.times FrameMsg
         , Mouse.moves MouseMsg
         ]
 
@@ -63,6 +65,9 @@ subscriptions _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Resize size ->
+            ( { model | size = size }, Cmd.none )
+
         FrameMsg time ->
             ( { model | time = time / 1000 }, Cmd.none )
 
@@ -110,10 +115,14 @@ camera model =
 
 uniforms : Model -> Uniforms
 uniforms model =
-    { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
-    , perspective = Mat4.makePerspective 45 (3 / 2) 0.01 100
-    , camera = camera model
-    }
+    let
+        aspectRatio =
+            (toFloat model.size.width) / (toFloat model.size.height)
+    in
+        { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
+        , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
+        , camera = camera model
+        }
 
 
 
