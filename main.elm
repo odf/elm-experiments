@@ -7,13 +7,15 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
+import Window
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
 import Cube exposing (cube, Vertex)
 
 
 type alias Model =
-    { time : Float
+    { size : Window.Size
+    , time : Float
     , mousePos : Mouse.Position
     , mesh : Mesh Vertex
     }
@@ -24,20 +26,11 @@ type Msg
     | MouseMsg Mouse.Position
 
 
-frameWidth : Int
-frameWidth =
-    750
-
-
-frameHeight : Int
-frameHeight =
-    500
-
-
 init : ( Model, Cmd Msg )
 init =
-    ( { time = 0
-      , mousePos = { x = frameWidth // 2, y = frameHeight // 2 }
+    ( { size = { width = 750, height = 500 }
+      , time = 0
+      , mousePos = { x = 375, y = 250 }
       , mesh = cube
       }
     , Cmd.none
@@ -47,8 +40,8 @@ init =
 view : Model -> Html Msg
 view model =
     WebGL.toHtml
-        [ width frameWidth
-        , height frameHeight
+        [ width model.size.width
+        , height model.size.height
         , style [ ( "display", "block" ), ( "background", "black" ) ]
         ]
         [ WebGL.entity
@@ -100,14 +93,14 @@ type alias Varyings =
     }
 
 
-camera : Mouse.Position -> Mat4
-camera pos =
+camera : Model -> Mat4
+camera model =
     let
         camX =
-            pos.x * 2 - frameWidth |> toFloat
+            model.mousePos.x * 2 - model.size.width |> toFloat
 
         camY =
-            frameHeight - pos.y * 2 |> toFloat
+            model.size.height - model.mousePos.y * 2 |> toFloat
 
         cameraPos =
             vec3 camX camY 400 |> Vec3.normalize |> Vec3.scale 5
@@ -119,7 +112,7 @@ uniforms : Model -> Uniforms
 uniforms model =
     { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
     , perspective = Mat4.makePerspective 45 (3 / 2) 0.01 100
-    , camera = camera model.mousePos
+    , camera = camera model
     }
 
 
