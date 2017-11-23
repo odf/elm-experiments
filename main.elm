@@ -14,16 +14,37 @@ import Window
 import Cube exposing (cube, Vertex)
 
 
+type alias ViewState =
+    { mousePos : Mouse.Position
+    }
+
+
+initViewState : ViewState
+initViewState =
+    { mousePos = { x = 0, y = 0 } }
+
+
+type ViewMsg
+    = MouseViewMsg Mouse.Position
+
+
+updateViewState : ViewMsg -> ViewState -> ( ViewState, Cmd Msg )
+updateViewState msg viewState =
+    case msg of
+        MouseViewMsg pos ->
+            ( { viewState | mousePos = pos }, Cmd.none )
+
+
 type alias Model =
     { size : Window.Size
     , time : Float
-    , mousePos : Mouse.Position
+    , viewState : ViewState
     , mesh : Mesh Vertex
     }
 
 
 type Msg
-    = Resize Window.Size
+    = ResizeMsg Window.Size
     | FrameMsg Time
     | MouseMsg Mouse.Position
 
@@ -32,10 +53,10 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , time = 0
-      , mousePos = { x = 0, y = 0 }
+      , viewState = initViewState
       , mesh = cube
       }
-    , Task.perform Resize Window.size
+    , Task.perform ResizeMsg Window.size
     )
 
 
@@ -57,7 +78,7 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Window.resizes Resize
+        [ Window.resizes ResizeMsg
         , AnimationFrame.times FrameMsg
         , Mouse.moves MouseMsg
         ]
@@ -66,14 +87,18 @@ subscriptions _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Resize size ->
+        ResizeMsg size ->
             ( { model | size = size }, Cmd.none )
 
         FrameMsg time ->
             ( { model | time = time / 1000 }, Cmd.none )
 
         MouseMsg pos ->
-            ( { model | mousePos = pos }, Cmd.none )
+            let
+                ( newViewState, cmd ) =
+                    updateViewState (MouseViewMsg pos) model.viewState
+            in
+                ( { model | viewState = newViewState }, cmd )
 
 
 main : Program Never Model Msg
@@ -102,11 +127,14 @@ type alias Varyings =
 camera : Model -> Mat4
 camera model =
     let
+        mousePos =
+            model.viewState.mousePos
+
         camX =
-            model.mousePos.x * 2 - model.size.width |> toFloat
+            mousePos.x * 2 - model.size.width |> toFloat
 
         camY =
-            model.size.height - model.mousePos.y * 2 |> toFloat
+            model.size.height - mousePos.y * 2 |> toFloat
 
         cameraPos =
             vec3 camX camY 400 |> Vec3.normalize |> Vec3.scale 5
