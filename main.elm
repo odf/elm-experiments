@@ -15,23 +15,23 @@ import Camera
 
 
 type alias Model =
-    { size : Window.Size
-    , time : Float
+    { time : Float
+    , size : Window.Size
     , cameraModel : Camera.Model
     , mesh : Mesh Vertex
     }
 
 
 type Msg
-    = ResizeMsg Window.Size
-    | FrameMsg Time
+    = FrameMsg Time
+    | ResizeMsg Window.Size
     | CameraMsg Camera.Msg
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { size = { width = 0, height = 0 }
-      , time = 0
+    ( { time = 0
+      , size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
       , mesh = cube
       }
@@ -42,8 +42,8 @@ init =
 view : Model -> Html Msg
 view model =
     WebGL.toHtml
-        [ width model.size.width
-        , height model.size.height
+        [ width model.cameraModel.size.width
+        , height model.cameraModel.size.height
         , style [ ( "display", "block" ), ( "background", "black" ) ]
         ]
         [ WebGL.entity
@@ -66,16 +66,25 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ResizeMsg size ->
-            ( { model | size = size }, Cmd.none )
-
         FrameMsg time ->
             ( { model | time = time / 1000 }, Cmd.none )
 
-        CameraMsg msg ->
+        ResizeMsg size ->
+            let
+                camMsg =
+                    Camera.resizeMsg size
+
+                ( updatedCameraModel, cmd ) =
+                    Camera.update camMsg model.cameraModel
+            in
+                ( { model | size = size, cameraModel = updatedCameraModel }
+                , Cmd.map CameraMsg cmd
+                )
+
+        CameraMsg camMsg ->
             let
                 ( updatedCameraModel, cmd ) =
-                    Camera.update msg model.cameraModel
+                    Camera.update camMsg model.cameraModel
             in
                 ( { model | cameraModel = updatedCameraModel }
                 , Cmd.map CameraMsg cmd
@@ -111,11 +120,14 @@ camera model =
         mousePos =
             model.cameraModel.mousePos
 
+        frameSize =
+            model.cameraModel.size
+
         camX =
-            mousePos.x * 2 - model.size.width |> toFloat
+            mousePos.x * 2 - frameSize.width |> toFloat
 
         camY =
-            model.size.height - mousePos.y * 2 |> toFloat
+            frameSize.height - mousePos.y * 2 |> toFloat
 
         cameraPos =
             vec3 camX camY 400 |> Vec3.normalize |> Vec3.scale 5
@@ -126,8 +138,11 @@ camera model =
 uniforms : Model -> Uniforms
 uniforms model =
     let
+        frameSize =
+            model.cameraModel.size
+
         aspectRatio =
-            (toFloat model.size.width) / (toFloat model.size.height)
+            (toFloat frameSize.width) / (toFloat frameSize.height)
     in
         { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
         , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
