@@ -6,39 +6,18 @@ import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Mouse
 import Task
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
 import Window
 import Cube exposing (cube, Vertex)
-
-
-type alias ViewState =
-    { mousePos : Mouse.Position
-    }
-
-
-initViewState : ViewState
-initViewState =
-    { mousePos = { x = 0, y = 0 } }
-
-
-type ViewMsg
-    = MouseViewMsg Mouse.Position
-
-
-updateViewState : ViewMsg -> ViewState -> ( ViewState, Cmd Msg )
-updateViewState msg viewState =
-    case msg of
-        MouseViewMsg pos ->
-            ( { viewState | mousePos = pos }, Cmd.none )
+import Camera
 
 
 type alias Model =
     { size : Window.Size
     , time : Float
-    , viewState : ViewState
+    , cameraModel : Camera.Model
     , mesh : Mesh Vertex
     }
 
@@ -46,14 +25,14 @@ type alias Model =
 type Msg
     = ResizeMsg Window.Size
     | FrameMsg Time
-    | MouseMsg Mouse.Position
+    | CameraMsg Camera.Msg
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , time = 0
-      , viewState = initViewState
+      , cameraModel = Camera.initialModel
       , mesh = cube
       }
     , Task.perform ResizeMsg Window.size
@@ -76,11 +55,11 @@ view model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
         [ Window.resizes ResizeMsg
         , AnimationFrame.times FrameMsg
-        , Mouse.moves MouseMsg
+        , Sub.map CameraMsg <| Camera.subscriptions model.cameraModel
         ]
 
 
@@ -93,12 +72,14 @@ update msg model =
         FrameMsg time ->
             ( { model | time = time / 1000 }, Cmd.none )
 
-        MouseMsg pos ->
+        CameraMsg msg ->
             let
-                ( newViewState, cmd ) =
-                    updateViewState (MouseViewMsg pos) model.viewState
+                ( updatedCameraModel, cmd ) =
+                    Camera.update msg model.cameraModel
             in
-                ( { model | viewState = newViewState }, cmd )
+                ( { model | cameraModel = updatedCameraModel }
+                , Cmd.map CameraMsg cmd
+                )
 
 
 main : Program Never Model Msg
@@ -128,7 +109,7 @@ camera : Model -> Mat4
 camera model =
     let
         mousePos =
-            model.viewState.mousePos
+            model.cameraModel.mousePos
 
         camX =
             mousePos.x * 2 - model.size.width |> toFloat
