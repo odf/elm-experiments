@@ -63,6 +63,17 @@ subscriptions model =
         ]
 
 
+updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )
+updateCamera camMsg model =
+    let
+        ( updatedCameraModel, cmd ) =
+            Camera.update camMsg model.cameraModel
+    in
+        ( { model | cameraModel = updatedCameraModel }
+        , Cmd.map CameraMsg cmd
+        )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -70,25 +81,10 @@ update msg model =
             ( { model | time = time / 1000 }, Cmd.none )
 
         ResizeMsg size ->
-            let
-                camMsg =
-                    Camera.resizeMsg size
-
-                ( updatedCameraModel, cmd ) =
-                    Camera.update camMsg model.cameraModel
-            in
-                ( { model | size = size, cameraModel = updatedCameraModel }
-                , Cmd.map CameraMsg cmd
-                )
+            updateCamera (Camera.resizeMsg size) model
 
         CameraMsg camMsg ->
-            let
-                ( updatedCameraModel, cmd ) =
-                    Camera.update camMsg model.cameraModel
-            in
-                ( { model | cameraModel = updatedCameraModel }
-                , Cmd.map CameraMsg cmd
-                )
+            updateCamera camMsg model
 
 
 main : Program Never Model Msg
