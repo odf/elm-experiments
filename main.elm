@@ -99,8 +99,7 @@ main =
 
 type alias Uniforms =
     { rotation : Mat4
-    , perspective : Mat4
-    , camera : Mat4
+    , viewing : Mat4
     }
 
 
@@ -110,40 +109,11 @@ type alias Varyings =
     }
 
 
-camera : Model -> Mat4
-camera model =
-    let
-        mousePos =
-            model.cameraModel.mousePos
-
-        frameSize =
-            model.cameraModel.size
-
-        camX =
-            mousePos.x * 2 - frameSize.width |> toFloat
-
-        camY =
-            frameSize.height - mousePos.y * 2 |> toFloat
-
-        cameraPos =
-            vec3 camX camY 400 |> Vec3.normalize |> Vec3.scale 5
-    in
-        Mat4.makeLookAt cameraPos (vec3 0 0 0) (vec3 0 1 0)
-
-
 uniforms : Model -> Uniforms
 uniforms model =
-    let
-        frameSize =
-            model.cameraModel.size
-
-        aspectRatio =
-            (toFloat frameSize.width) / (toFloat frameSize.height)
-    in
-        { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
-        , perspective = Mat4.makePerspective 45 aspectRatio 0.01 100
-        , camera = camera model
-        }
+    { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
+    , viewing = Camera.viewingMatrix model.cameraModel
+    }
 
 
 
@@ -157,16 +127,15 @@ vertexShader =
     attribute vec3 color;
     attribute vec3 pos;
     attribute vec2 posUV;
-    uniform mat4 perspective;
-    uniform mat4 camera;
     uniform mat4 rotation;
+    uniform mat4 viewing;
     varying vec3 vcolor;
     varying vec2 vposUV;
 
     void main () {
         vcolor = color;
         vposUV = posUV;
-        gl_Position = perspective * camera * rotation * vec4(pos, 1.0);
+        gl_Position = viewing * rotation * vec4(pos, 1.0);
     }
 
     |]
