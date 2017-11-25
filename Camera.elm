@@ -8,13 +8,16 @@ module Camera
         , update
         , view
         , viewingMatrix
+        , rotationMatrix
         )
 
+import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3)
 import Mouse
+import Time exposing (Time)
 import WebGL
 
 
@@ -31,14 +34,16 @@ type alias Position =
 
 
 type alias Model =
-    { size : Size
+    { time : Float
+    , size : Size
     , origin : Position
     , mousePos : Mouse.Position
     }
 
 
 type Msg
-    = ResizeMsg Size
+    = FrameMsg Time
+    | ResizeMsg Size
     | MouseMsg Mouse.Position
 
 
@@ -49,7 +54,8 @@ resizeMsg size =
 
 initialModel : Model
 initialModel =
-    { size = { width = 0, height = 0 }
+    { time = 0
+    , size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
     , mousePos = { x = 0, y = 0 }
     }
@@ -58,6 +64,9 @@ initialModel =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        FrameMsg time ->
+            ( { model | time = time / 1000 }, Cmd.none )
+
         ResizeMsg size ->
             ( { model | size = size }, Cmd.none )
 
@@ -67,7 +76,10 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Mouse.moves MouseMsg
+    Sub.batch
+        [ AnimationFrame.times FrameMsg
+        , Mouse.moves MouseMsg
+        ]
 
 
 view : List WebGL.Entity -> Model -> Html Msg
@@ -105,6 +117,11 @@ cameraMatrix model =
             vec3 camX camY camZ |> Vec3.normalize |> Vec3.scale 5
     in
         Mat4.makeLookAt cameraPos (vec3 0 0 0) (vec3 0 1 0)
+
+
+rotationMatrix : Model -> Mat4
+rotationMatrix model =
+    Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0)
 
 
 viewingMatrix : Model -> Mat4

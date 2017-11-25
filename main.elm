@@ -1,12 +1,10 @@
 module Main exposing (main)
 
-import AnimationFrame
 import Html exposing (Html)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Task
-import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
 import Window
 import Cube exposing (cube, Vertex)
@@ -14,23 +12,20 @@ import Camera
 
 
 type alias Model =
-    { time : Float
-    , size : Window.Size
+    { size : Window.Size
     , cameraModel : Camera.Model
     , mesh : Mesh Vertex
     }
 
 
 type Msg
-    = FrameMsg Time
-    | ResizeMsg Window.Size
+    = ResizeMsg Window.Size
     | CameraMsg Camera.Msg
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { time = 0
-      , size = { width = 0, height = 0 }
+    ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
       , mesh = cube
       }
@@ -38,25 +33,10 @@ init =
     )
 
 
-view : Model -> Html Msg
-view model =
-    let
-        entities =
-            [ WebGL.entity
-                vertexShader
-                fragmentShader
-                model.mesh
-                (uniforms model)
-            ]
-    in
-        Html.map CameraMsg <| Camera.view entities model.cameraModel
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Window.resizes ResizeMsg
-        , AnimationFrame.times FrameMsg
         , Sub.map CameraMsg <| Camera.subscriptions model.cameraModel
         ]
 
@@ -75,14 +55,25 @@ updateCamera camMsg model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FrameMsg time ->
-            ( { model | time = time / 1000 }, Cmd.none )
-
         ResizeMsg size ->
             updateCamera (Camera.resizeMsg size) model
 
         CameraMsg camMsg ->
             updateCamera camMsg model
+
+
+view : Model -> Html Msg
+view model =
+    let
+        entities =
+            [ WebGL.entity
+                vertexShader
+                fragmentShader
+                model.mesh
+                (uniforms model)
+            ]
+    in
+        Html.map CameraMsg <| Camera.view entities model.cameraModel
 
 
 main : Program Never Model Msg
@@ -109,7 +100,7 @@ type alias Varyings =
 
 uniforms : Model -> Uniforms
 uniforms model =
-    { rotation = (Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0))
+    { rotation = Camera.rotationMatrix model.cameraModel
     , viewing = Camera.viewingMatrix model.cameraModel
     }
 
