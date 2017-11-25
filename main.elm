@@ -87,8 +87,7 @@ main =
 
 
 type alias Uniforms =
-    { rotation : Mat4
-    , viewing : Mat4
+    { viewing : Mat4
     }
 
 
@@ -100,8 +99,7 @@ type alias Varyings =
 
 uniforms : Model -> Uniforms
 uniforms model =
-    { rotation = Camera.rotationMatrix model.cameraModel
-    , viewing = Camera.viewingMatrix model.cameraModel
+    { viewing = Camera.viewingMatrix model.cameraModel
     }
 
 
@@ -116,7 +114,6 @@ vertexShader =
     attribute vec3 color;
     attribute vec3 pos;
     attribute vec2 posUV;
-    uniform mat4 rotation;
     uniform mat4 viewing;
     varying vec3 vcolor;
     varying vec2 vposUV;
@@ -124,7 +121,7 @@ vertexShader =
     void main () {
         vcolor = color;
         vposUV = posUV;
-        gl_Position = viewing * rotation * vec4(pos, 1.0);
+        gl_Position = viewing * vec4(pos, 1.0);
     }
 
     |]
