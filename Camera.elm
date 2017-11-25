@@ -6,12 +6,16 @@ module Camera
         , initialModel
         , subscriptions
         , update
+        , view
         , viewingMatrix
         )
 
+import Html exposing (Html)
+import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3)
 import Mouse
+import WebGL
 
 
 type alias Size =
@@ -64,6 +68,16 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Mouse.moves MouseMsg
+
+
+view : List WebGL.Entity -> Model -> Html Msg
+view entities model =
+    WebGL.toHtml
+        [ width model.size.width
+        , height model.size.height
+        , style [ ( "display", "block" ), ( "background", "black" ) ]
+        ]
+        entities
 
 
 perspectiveMatrix : Model -> Mat4

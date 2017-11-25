@@ -2,7 +2,6 @@ module Main exposing (main)
 
 import AnimationFrame
 import Html exposing (Html)
-import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -41,17 +40,16 @@ init =
 
 view : Model -> Html Msg
 view model =
-    WebGL.toHtml
-        [ width model.cameraModel.size.width
-        , height model.cameraModel.size.height
-        , style [ ( "display", "block" ), ( "background", "black" ) ]
-        ]
-        [ WebGL.entity
-            vertexShader
-            fragmentShader
-            model.mesh
-            (uniforms model)
-        ]
+    let
+        entities =
+            [ WebGL.entity
+                vertexShader
+                fragmentShader
+                model.mesh
+                (uniforms model)
+            ]
+    in
+        Html.map CameraMsg <| Camera.view entities model.cameraModel
 
 
 subscriptions : Model -> Sub Msg
