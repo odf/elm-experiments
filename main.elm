@@ -12,7 +12,7 @@ import Renderer
 type alias Model =
     { size : Window.Size
     , cameraModel : Camera.Model
-    , mesh : WebGL.Mesh Cube.Vertex
+    , mesh : WebGL.Mesh Renderer.Vertex
     }
 
 

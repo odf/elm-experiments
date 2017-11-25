@@ -1,11 +1,17 @@
-module Renderer exposing (entity)
+module Renderer exposing (Vertex, entity)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Mesh, Shader)
-import Cube
 import Camera
+
+
+type alias Vertex =
+    { color : Vec3
+    , pos : Vec3
+    , posUV : Vec2
+    }
 
 
 type alias Uniforms =
@@ -19,7 +25,7 @@ type alias Varyings =
     }
 
 
-entity : Mesh Cube.Vertex -> Camera.Model -> WebGL.Entity
+entity : Mesh Vertex -> Camera.Model -> WebGL.Entity
 entity mesh model =
     let
         uniforms =
@@ -28,7 +34,7 @@ entity mesh model =
         WebGL.entity vertexShader fragmentShader mesh uniforms
 
 
-vertexShader : Shader Cube.Vertex Uniforms Varyings
+vertexShader : Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
 

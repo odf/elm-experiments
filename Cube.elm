@@ -1,16 +1,10 @@
-module Cube exposing (cube, Vertex)
+module Cube exposing (cube)
 
 import Color exposing (Color)
 import Math.Vector2 as Vec2 exposing (vec2, Vec2)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import WebGL
-
-
-type alias Vertex =
-    { color : Vec3
-    , pos : Vec3
-    , posUV : Vec2
-    }
+import Renderer exposing (Vertex)
 
 
 cube : WebGL.Mesh Vertex
