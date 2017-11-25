@@ -1,20 +1,18 @@
 module Main exposing (main)
 
 import Html exposing (Html)
-import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector2 as Vec2 exposing (vec2, Vec2)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Task
-import WebGL exposing (Mesh, Shader)
+import WebGL
 import Window
-import Cube exposing (cube, Vertex)
+import Cube
 import Camera
+import Renderer
 
 
 type alias Model =
     { size : Window.Size
     , cameraModel : Camera.Model
-    , mesh : Mesh Vertex
+    , mesh : WebGL.Mesh Cube.Vertex
     }
 
 
@@ -27,7 +25,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
-      , mesh = cube
+      , mesh = Cube.cube
       }
     , Task.perform ResizeMsg Window.size
     )
@@ -66,12 +64,7 @@ view : Model -> Html Msg
 view model =
     let
         entities =
-            [ WebGL.entity
-                vertexShader
-                fragmentShader
-                model.mesh
-                (uniforms model)
-            ]
+            [ Renderer.entity model.mesh model.cameraModel ]
     in
         Html.map CameraMsg <| Camera.view entities model.cameraModel
 
@@ -84,64 +77,3 @@ main =
         , subscriptions = subscriptions
         , update = update
         }
-
-
-type alias Uniforms =
-    { viewing : Mat4
-    }
-
-
-type alias Varyings =
-    { vcolor : Vec3
-    , vposUV : Vec2
-    }
-
-
-uniforms : Model -> Uniforms
-uniforms model =
-    { viewing = Camera.viewingMatrix model.cameraModel
-    }
-
-
-
--- Shaders
-
-
-vertexShader : Shader Vertex Uniforms Varyings
-vertexShader =
-    [glsl|
-
-    attribute vec3 color;
-    attribute vec3 pos;
-    attribute vec2 posUV;
-    uniform mat4 viewing;
-    varying vec3 vcolor;
-    varying vec2 vposUV;
-
-    void main () {
-        vcolor = color;
-        vposUV = posUV;
-        gl_Position = viewing * vec4(pos, 1.0);
-    }
-
-    |]
-
-
-fragmentShader : Shader {} Uniforms Varyings
-fragmentShader =
-    [glsl|
-
-    precision mediump float;
-    varying vec3 vcolor;
-    varying vec2 vposUV;
-
-    float PI=3.1415926535;
-
-    void main () {
-        float f1 = sin((vposUV.x + vposUV.y) * 3.0 * PI);
-        float f2 = sin((vposUV.x - vposUV.y) * 3.0 * PI);
-        float f = (sin(sin(f1 * f2 * 3.0) * 3.0) * 0.2) + 0.8;
-        gl_FragColor = vec4(f * vcolor, 1.0);
-    }
-
-    |]
