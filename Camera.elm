@@ -24,14 +24,14 @@ import WebGL
 
 
 type alias Size =
-    { width : Int
-    , height : Int
+    { width : Float
+    , height : Float
     }
 
 
 type alias Position =
-    { x : Int
-    , y : Int
+    { x : Float
+    , y : Float
     }
 
 
@@ -39,8 +39,9 @@ type alias Model =
     { time : Float
     , size : Size
     , origin : Position
-    , mousePos : Mouse.Position
     , mouseDown : Bool
+    , ndcPosOld : Position
+    , ndcPosNew : Position
     }
 
 
@@ -62,8 +63,9 @@ initialModel =
     { time = 0
     , size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
-    , mousePos = { x = 0, y = 0 }
     , mouseDown = False
+    , ndcPosOld = { x = 0, y = 0 }
+    , ndcPosNew = { x = 0, y = 0 }
     }
 
 
@@ -77,10 +79,10 @@ update msg model =
             { model | size = size } ! []
 
         MouseMoveMsg pos ->
-            { model | mousePos = pos } ! []
+            { model | ndcPosNew = ndcPos pos.x pos.y model } ! []
 
         MouseDownMsg ->
-            { model | mouseDown = True } ! []
+            { model | mouseDown = True, ndcPosOld = model.ndcPosNew } ! []
 
         MouseUpMsg ->
             { model | mouseDown = False } ! []
@@ -97,8 +99,8 @@ subscriptions _ =
 view : List WebGL.Entity -> Model -> Html Msg
 view entities model =
     WebGL.toHtml
-        [ width model.size.width
-        , height model.size.height
+        [ width (round model.size.width)
+        , height (round model.size.height)
         , style [ ( "display", "block" ), ( "background", "black" ) ]
         , onMouseDown MouseDownMsg
         , onMouseUp MouseUpMsg
@@ -106,24 +108,31 @@ view entities model =
         entities
 
 
+ndcPos : Int -> Int -> Model -> Position
+ndcPos posX posY model =
+    let
+        xRelative =
+            ((toFloat posX) - model.origin.x) / model.size.width
+
+        yRelative =
+            ((toFloat posY) - model.origin.y) / model.size.height
+    in
+        { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
+
+
 cameraDistance : Float
 cameraDistance =
     5.0
 
 
+scaleTo : Float -> Vec3 -> Vec3
+scaleTo length vec =
+    vec |> Vec3.normalize |> Vec3.scale length
+
+
 cameraPosition : Model -> Vec3
 cameraPosition model =
-    let
-        camX =
-            model.mousePos.x * 2 - model.size.width |> toFloat
-
-        camY =
-            model.size.height - model.mousePos.y * 2 |> toFloat
-
-        camZ =
-            toFloat <| max model.size.height model.size.width
-    in
-        vec3 camX camY camZ |> Vec3.normalize |> Vec3.scale cameraDistance
+    vec3 model.ndcPosNew.x model.ndcPosNew.y 1 |> scaleTo cameraDistance
 
 
 viewingMatrix : Model -> Mat4
@@ -142,7 +151,7 @@ perspectiveMatrix : Model -> Mat4
 perspectiveMatrix model =
     let
         aspectRatio =
-            (toFloat model.size.width) / (toFloat model.size.height)
+            model.size.width / model.size.height
 
         fov =
             45

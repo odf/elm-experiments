@@ -69,7 +69,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResizeMsg size ->
-            updateCamera (Camera.resizeMsg size) model
+            let
+                sz =
+                    { width = toFloat size.width, height = toFloat size.height }
+            in
+                updateCamera (Camera.resizeMsg sz) model
 
         CameraMsg camMsg ->
             updateCamera camMsg model
