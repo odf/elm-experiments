@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Html exposing (Html)
+import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import Window
@@ -13,6 +14,7 @@ type alias Model =
     { size : Window.Size
     , cameraModel : Camera.Model
     , mesh : WebGL.Mesh Renderer.Vertex
+    , material : Renderer.Material
     }
 
 
@@ -26,9 +28,22 @@ init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
       , mesh = Cube.cube
+      , material = initMaterial
       }
     , Task.perform ResizeMsg Window.size
     )
+
+
+initMaterial : Renderer.Material
+initMaterial =
+    { ambientColor = vec3 1 1 1
+    , diffuseColor = vec3 1 1 1
+    , specularColor = vec3 1 1 1
+    , ka = 0.0
+    , kd = 1.0
+    , ks = 0.2
+    , shininess = 4.0
+    }
 
 
 subscriptions : Model -> Sub Msg
@@ -64,7 +79,7 @@ view : Model -> Html Msg
 view model =
     let
         entities =
-            [ Renderer.entity model.mesh model.cameraModel ]
+            [ Renderer.entity model.mesh model.material model.cameraModel ]
     in
         Html.map CameraMsg <| Camera.view entities model.cameraModel
 

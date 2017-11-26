@@ -1,4 +1,4 @@
-module Renderer exposing (Vertex, entity)
+module Renderer exposing (Vertex, Material, entity)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -13,11 +13,29 @@ type alias Vertex =
     }
 
 
+type alias Material =
+    { ambientColor : Vec3
+    , diffuseColor : Vec3
+    , specularColor : Vec3
+    , ka : Float
+    , kd : Float
+    , ks : Float
+    , shininess : Float
+    }
+
+
 type alias Uniforms =
     { viewing : Mat4
     , perspective : Mat4
     , cameraPos : Vec3
     , lightPos : Vec3
+    , ambientColor : Vec3
+    , diffuseColor : Vec3
+    , specularColor : Vec3
+    , ka : Float
+    , kd : Float
+    , ks : Float
+    , shininess : Float
     }
 
 
@@ -28,14 +46,21 @@ type alias Varyings =
     }
 
 
-entity : Mesh Vertex -> Camera.Model -> WebGL.Entity
-entity mesh model =
+entity : Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
+entity mesh material model =
     let
         uniforms =
             { viewing = Camera.viewingMatrix model
             , perspective = Camera.perspectiveMatrix model
             , cameraPos = vec3 0 0 -Camera.cameraDistance
             , lightPos = vec3 1 1 -2 |> Vec3.scale 5
+            , ambientColor = material.ambientColor
+            , diffuseColor = material.diffuseColor
+            , specularColor = material.specularColor
+            , ka = material.ka
+            , kd = material.kd
+            , ks = material.ks
+            , shininess = material.shininess
             }
     in
         WebGL.entity vertexShader fragmentShader mesh uniforms
@@ -71,6 +96,13 @@ fragmentShader =
     precision mediump float;
     uniform vec3 cameraPos;
     uniform vec3 lightPos;
+    uniform vec3 ambientColor;
+    uniform vec3 diffuseColor;
+    uniform vec3 specularColor;
+    uniform float ka;
+    uniform float kd;
+    uniform float ks;
+    uniform float shininess;
     varying vec3 vcolor;
     varying vec3 vpos;
     varying vec3 vnormal;
@@ -79,20 +111,22 @@ fragmentShader =
         vec3 N = normalize(vnormal);
         vec3 L = normalize(lightPos - vpos);
 
-        // Lambert's cosine law
-        float lambertian = max(dot(N, L), 0.0);
+        float diffuse = max(dot(N, L), 0.0);
 
         float specular = 0.0;
 
-        if(lambertian > 0.0) {
-          vec3 R = reflect(-L, N);   // Reflected light vector
-          vec3 V = normalize(cameraPos - vpos); // Vector to viewer
-
-          // Compute the specular term
-          float specAngle = max(dot(R, V), 0.0);
-          specular = pow(specAngle, 4.0);
+        if(diffuse > 0.0) {
+          vec3 R = reflect(-L, N);
+          vec3 V = normalize(cameraPos - vpos);
+          float t = max(dot(R, V), 0.0);
+          specular = pow(t, shininess);
         }
-        gl_FragColor = vec4(lambertian * vcolor + 0.2 * specular, 1.0);
+
+        vec3 ca = ka * ambientColor;
+        vec3 cd = kd * diffuse * diffuseColor * vcolor;
+        vec3 cs = ks * specular * specularColor;
+
+        gl_FragColor = vec4(ca + cd + cs, 1.0);
     }
 
     |]
