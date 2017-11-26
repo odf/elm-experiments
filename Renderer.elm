@@ -49,16 +49,24 @@ type alias Varyings =
     }
 
 
+scaleTo : Float -> Vec3 -> Vec3
+scaleTo length vec =
+    vec |> Vec3.normalize |> Vec3.scale length
+
+
 entity : Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
 entity mesh material model =
     let
+        camDist =
+            Camera.cameraDistance
+
         uniforms =
             { viewing = Camera.viewingMatrix model
             , perspective = Camera.perspectiveMatrix model
-            , cameraPos = vec3 0 0 -Camera.cameraDistance
-            , light1Pos = vec3 -1 1 -2 |> Vec3.normalize |> Vec3.scale 10
+            , cameraPos = vec3 0 0 -camDist
+            , light1Pos = vec3 -1 1 -2 |> scaleTo (2 * camDist)
             , light1Color = vec3 1 1 1
-            , light2Pos = vec3 2 0 -1 |> Vec3.normalize |> Vec3.scale 10
+            , light2Pos = vec3 2 0 -1 |> scaleTo (2 * camDist)
             , light2Color = vec3 0 0 1
             , ambientColor = material.ambientColor
             , diffuseColor = material.diffuseColor
