@@ -108,17 +108,17 @@ fragmentShader =
     varying vec3 vnormal;
 
     void main () {
-        vec3 N = normalize(vnormal);
-        vec3 L = normalize(lightPos - vpos);
+        vec3 normVec = normalize(vnormal);
+        vec3 lightVec = normalize(lightPos - vpos);
 
-        float diffuse = max(dot(N, L), 0.0);
+        float diffuse = max(dot(normVec, lightVec), 0.0);
 
         float specular = 0.0;
 
         if(diffuse > 0.0) {
-          vec3 R = reflect(-L, N);
-          vec3 V = normalize(cameraPos - vpos);
-          float t = max(dot(R, V), 0.0);
+          vec3 reflectVec = reflect(-lightVec, normVec);
+          vec3 camVec = normalize(cameraPos - vpos);
+          float t = max(dot(reflectVec, camVec), 0.0);
           specular = pow(t, shininess);
         }
 
