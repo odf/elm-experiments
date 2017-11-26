@@ -15,6 +15,7 @@ module Camera
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
+import Html.Events exposing (onMouseUp, onMouseDown)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
@@ -39,13 +40,16 @@ type alias Model =
     , size : Size
     , origin : Position
     , mousePos : Mouse.Position
+    , mouseDown : Bool
     }
 
 
 type Msg
     = FrameMsg Time
     | ResizeMsg Size
-    | MouseMsg Mouse.Position
+    | MouseMoveMsg Mouse.Position
+    | MouseUpMsg
+    | MouseDownMsg
 
 
 resizeMsg : Size -> Msg
@@ -59,6 +63,7 @@ initialModel =
     , size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
     , mousePos = { x = 0, y = 0 }
+    , mouseDown = False
     }
 
 
@@ -66,20 +71,26 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FrameMsg time ->
-            ( { model | time = time / 1000 }, Cmd.none )
+            { model | time = time / 1000 } ! []
 
         ResizeMsg size ->
-            ( { model | size = size }, Cmd.none )
+            { model | size = size } ! []
 
-        MouseMsg pos ->
-            ( { model | mousePos = pos }, Cmd.none )
+        MouseMoveMsg pos ->
+            { model | mousePos = pos } ! []
+
+        MouseDownMsg ->
+            { model | mouseDown = True } ! []
+
+        MouseUpMsg ->
+            { model | mouseDown = False } ! []
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ AnimationFrame.times FrameMsg
-        , Mouse.moves MouseMsg
+        , Mouse.moves MouseMoveMsg
         ]
 
 
@@ -89,6 +100,8 @@ view entities model =
         [ width model.size.width
         , height model.size.height
         , style [ ( "display", "block" ), ( "background", "black" ) ]
+        , onMouseDown MouseDownMsg
+        , onMouseUp MouseUpMsg
         ]
         entities
 
@@ -130,5 +143,14 @@ perspectiveMatrix model =
     let
         aspectRatio =
             (toFloat model.size.width) / (toFloat model.size.height)
+
+        fov =
+            45
+
+        fovy =
+            if aspectRatio >= 1 then
+                fov
+            else
+                atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
     in
-        Mat4.makePerspective 45 aspectRatio 0.01 100
+        Mat4.makePerspective fovy aspectRatio 0.01 100
