@@ -107,7 +107,7 @@ fragmentShader =
     varying vec3 vpos;
     varying vec3 vnormal;
 
-    void main () {
+    vec3 colorFromLight (vec3 lightPos) {
         vec3 normVec = normalize(vnormal);
         vec3 lightVec = normalize(lightPos - vpos);
 
@@ -122,11 +122,17 @@ fragmentShader =
           specular = pow(t, shininess);
         }
 
-        vec3 ca = ka * ambientColor;
         vec3 cd = kd * diffuse * diffuseColor * vcolor;
         vec3 cs = ks * specular * specularColor;
 
-        gl_FragColor = vec4(ca + cd + cs, 1.0);
+        return cd + cs;
+    }
+
+    void main () {
+        vec3 color = ka * ambientColor;
+        color += colorFromLight(lightPos);
+
+        gl_FragColor = vec4(color, 1.0);
     }
 
     |]
