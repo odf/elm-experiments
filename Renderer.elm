@@ -28,7 +28,10 @@ type alias Uniforms =
     { viewing : Mat4
     , perspective : Mat4
     , cameraPos : Vec3
-    , lightPos : Vec3
+    , light1Pos : Vec3
+    , light1Color : Vec3
+    , light2Pos : Vec3
+    , light2Color : Vec3
     , ambientColor : Vec3
     , diffuseColor : Vec3
     , specularColor : Vec3
@@ -53,7 +56,10 @@ entity mesh material model =
             { viewing = Camera.viewingMatrix model
             , perspective = Camera.perspectiveMatrix model
             , cameraPos = vec3 0 0 -Camera.cameraDistance
-            , lightPos = vec3 1 1 -2 |> Vec3.scale 5
+            , light1Pos = vec3 -1 1 -2 |> Vec3.normalize |> Vec3.scale 10
+            , light1Color = vec3 1 1 1
+            , light2Pos = vec3 2 0 -1 |> Vec3.normalize |> Vec3.scale 10
+            , light2Color = vec3 0 0 1
             , ambientColor = material.ambientColor
             , diffuseColor = material.diffuseColor
             , specularColor = material.specularColor
@@ -95,7 +101,10 @@ fragmentShader =
 
     precision mediump float;
     uniform vec3 cameraPos;
-    uniform vec3 lightPos;
+    uniform vec3 light1Pos;
+    uniform vec3 light1Color;
+    uniform vec3 light2Pos;
+    uniform vec3 light2Color;
     uniform vec3 ambientColor;
     uniform vec3 diffuseColor;
     uniform vec3 specularColor;
@@ -107,7 +116,7 @@ fragmentShader =
     varying vec3 vpos;
     varying vec3 vnormal;
 
-    vec3 colorFromLight (vec3 lightPos) {
+    vec3 colorFromLight (vec3 lightPos, vec3 lightColor) {
         vec3 normVec = normalize(vnormal);
         vec3 lightVec = normalize(lightPos - vpos);
 
@@ -125,12 +134,13 @@ fragmentShader =
         vec3 cd = kd * diffuse * diffuseColor * vcolor;
         vec3 cs = ks * specular * specularColor;
 
-        return cd + cs;
+        return lightColor * (cd + cs);
     }
 
     void main () {
         vec3 color = ka * ambientColor;
-        color += colorFromLight(lightPos);
+        color += colorFromLight(light1Pos, light1Color);
+        color += colorFromLight(light2Pos, light2Color);
 
         gl_FragColor = vec4(color, 1.0);
     }
