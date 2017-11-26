@@ -7,6 +7,7 @@ module Camera
         , subscriptions
         , update
         , view
+        , cameraDistance
         , perspectiveMatrix
         , viewingMatrix
         )
@@ -15,7 +16,7 @@ import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3)
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
 import Time exposing (Time)
 import WebGL
@@ -92,17 +93,13 @@ view entities model =
         entities
 
 
-perspectiveMatrix : Model -> Mat4
-perspectiveMatrix model =
-    let
-        aspectRatio =
-            (toFloat model.size.width) / (toFloat model.size.height)
-    in
-        Mat4.makePerspective 45 aspectRatio 0.01 100
+cameraDistance : Float
+cameraDistance =
+    5.0
 
 
-cameraMatrix : Model -> Mat4
-cameraMatrix model =
+cameraPosition : Model -> Vec3
+cameraPosition model =
     let
         camX =
             model.mousePos.x * 2 - model.size.width |> toFloat
@@ -112,18 +109,26 @@ cameraMatrix model =
 
         camZ =
             toFloat <| max model.size.height model.size.width
-
-        cameraPos =
-            vec3 camX camY camZ |> Vec3.normalize |> Vec3.scale 5
     in
-        Mat4.makeLookAt cameraPos (vec3 0 0 0) (vec3 0 1 0)
-
-
-rotationMatrix : Model -> Mat4
-rotationMatrix model =
-    Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0)
+        vec3 camX camY camZ |> Vec3.normalize |> Vec3.scale cameraDistance
 
 
 viewingMatrix : Model -> Mat4
 viewingMatrix model =
-    Mat4.mul (cameraMatrix model) (rotationMatrix model)
+    let
+        cameraMatrix =
+            Mat4.makeLookAt (cameraPosition model) (vec3 0 0 0) (vec3 0 1 0)
+
+        rotationMatrix =
+            Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0)
+    in
+        Mat4.mul cameraMatrix rotationMatrix
+
+
+perspectiveMatrix : Model -> Mat4
+perspectiveMatrix model =
+    let
+        aspectRatio =
+            (toFloat model.size.width) / (toFloat model.size.height)
+    in
+        Mat4.makePerspective 45 aspectRatio 0.01 100
