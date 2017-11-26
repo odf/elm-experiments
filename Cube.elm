@@ -9,6 +9,24 @@ import Renderer exposing (Vertex)
 cube : WebGL.Mesh Vertex
 cube =
     let
+        left =
+            vec3 -1 0 0
+
+        right =
+            vec3 1 0 0
+
+        front =
+            vec3 0 1 0
+
+        back =
+            vec3 0 -1 0
+
+        top =
+            vec3 0 0 1
+
+        bottom =
+            vec3 0 0 -1
+
         rft =
             vec3 1 1 1
 
@@ -33,19 +51,19 @@ cube =
         lbb =
             vec3 -1 -1 -1
     in
-        [ face Color.green rft rfb rbb rbt
-        , face Color.blue rft rfb lfb lft
-        , face Color.yellow rft lft lbt rbt
-        , face Color.red rfb lfb lbb rbb
-        , face Color.purple lft lfb lbb lbt
-        , face Color.orange rbt rbb lbb lbt
+        [ face right Color.green rft rfb rbb rbt
+        , face front Color.blue rft rfb lfb lft
+        , face top Color.yellow rft lft lbt rbt
+        , face bottom Color.red rfb lfb lbb rbb
+        , face left Color.purple lft lfb lbb lbt
+        , face back Color.orange rbt rbb lbb lbt
         ]
             |> List.concat
             |> WebGL.triangles
 
 
-face : Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
-face rawColor a b c d =
+face : Vec3 -> Color -> Vec3 -> Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
+face normal rawColor a b c d =
     let
         color =
             let
@@ -58,7 +76,7 @@ face rawColor a b c d =
                     (toFloat c.blue / 255)
 
         vertex position =
-            Vertex color position
+            Vertex color position normal
     in
         [ ( vertex a, vertex b, vertex c )
         , ( vertex c, vertex d, vertex a )

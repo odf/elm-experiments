@@ -7,6 +7,7 @@ module Camera
         , subscriptions
         , update
         , view
+        , perspectiveMatrix
         , viewingMatrix
         )
 
@@ -123,21 +124,6 @@ rotationMatrix model =
     Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0)
 
 
-(.*) : Mat4 -> Mat4 -> Mat4
-(.*) a b =
-    Mat4.mul a b
-
-
 viewingMatrix : Model -> Mat4
 viewingMatrix model =
-    let
-        proj =
-            perspectiveMatrix model
-
-        cam =
-            cameraMatrix model
-
-        rot =
-            rotationMatrix model
-    in
-        proj .* cam .* rot
+    Mat4.mul (cameraMatrix model) (rotationMatrix model)
