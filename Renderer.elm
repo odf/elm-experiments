@@ -1,7 +1,6 @@
 module Renderer exposing (Vertex, entity)
 
 import Math.Matrix4 exposing (Mat4)
-import Math.Vector2 exposing (Vec2)
 import Math.Vector3 exposing (Vec3)
 import WebGL exposing (Mesh, Shader)
 import Camera
@@ -10,7 +9,6 @@ import Camera
 type alias Vertex =
     { color : Vec3
     , pos : Vec3
-    , posUV : Vec2
     }
 
 
@@ -21,7 +19,6 @@ type alias Uniforms =
 
 type alias Varyings =
     { vcolor : Vec3
-    , vposUV : Vec2
     }
 
 
@@ -40,14 +37,11 @@ vertexShader =
 
     attribute vec3 color;
     attribute vec3 pos;
-    attribute vec2 posUV;
     uniform mat4 viewing;
     varying vec3 vcolor;
-    varying vec2 vposUV;
 
     void main () {
         vcolor = color;
-        vposUV = posUV;
         gl_Position = viewing * vec4(pos, 1.0);
     }
 
@@ -60,15 +54,9 @@ fragmentShader =
 
     precision mediump float;
     varying vec3 vcolor;
-    varying vec2 vposUV;
-
-    float PI=3.1415926535;
 
     void main () {
-        float f1 = sin((vposUV.x + vposUV.y) * 3.0 * PI);
-        float f2 = sin((vposUV.x - vposUV.y) * 3.0 * PI);
-        float f = (sin(sin(f1 * f2 * 3.0) * 3.0) * 0.2) + 0.8;
-        gl_FragColor = vec4(f * vcolor, 1.0);
+        gl_FragColor = vec4(vcolor, 1.0);
     }
 
     |]

@@ -1,8 +1,7 @@
 module Cube exposing (cube)
 
 import Color exposing (Color)
-import Math.Vector2 as Vec2 exposing (vec2, Vec2)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Math.Vector3 exposing (vec3, Vec3)
 import WebGL
 import Renderer exposing (Vertex)
 
@@ -58,9 +57,9 @@ face rawColor a b c d =
                     (toFloat c.green / 255)
                     (toFloat c.blue / 255)
 
-        vertex position u v =
-            Vertex color position (vec2 u v)
+        vertex position =
+            Vertex color position
     in
-        [ ( vertex a 0 0, vertex b 1 0, vertex c 1 1 )
-        , ( vertex c 1 1, vertex d 0 1, vertex a 0 0 )
+        [ ( vertex a, vertex b, vertex c )
+        , ( vertex c, vertex d, vertex a )
         ]
