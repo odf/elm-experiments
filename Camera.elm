@@ -39,9 +39,10 @@ type alias Model =
     { time : Float
     , size : Size
     , origin : Position
-    , mouseDown : Bool
+    , dragging : Bool
     , ndcPos : Position
     , rotation : Mat4
+    , deltaRot : Mat4
     }
 
 
@@ -64,9 +65,10 @@ initialModel =
     { time = 0
     , size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
-    , mouseDown = False
+    , dragging = False
     , ndcPos = { x = 0, y = 0 }
     , rotation = Mat4.identity
+    , deltaRot = Mat4.identity
     }
 
 
@@ -74,7 +76,14 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FrameMsg time ->
-            { model | time = time / 1000 } ! []
+            { model
+                | rotation =
+                    if model.dragging then
+                        model.rotation
+                    else
+                        Mat4.mul model.deltaRot model.rotation
+            }
+                ! []
 
         ResizeMsg size ->
             { model | size = size } ! []
@@ -83,18 +92,18 @@ update msg model =
             mouseMoveUpdate pos model
 
         MouseDownMsg ->
-            { model | mouseDown = True } ! []
+            { model | dragging = True, deltaRot = Mat4.identity } ! []
 
         MouseUpMsg ->
-            { model | mouseDown = False } ! []
+            { model | dragging = False } ! []
 
         MouseLeaveMsg ->
-            { model | mouseDown = False } ! []
+            { model | dragging = False } ! []
 
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
 mouseMoveUpdate pos model =
-    if model.mouseDown then
+    if model.dragging then
         dragMouse pos model
     else
         { model | ndcPos = ndcPos pos.x pos.y model } ! []
@@ -112,25 +121,27 @@ dragMouse pos model =
         dy =
             (ndcPosNew.y - model.ndcPos.y) * pi / 2
 
-        rotation =
-            if dx == 0 && dy == 0 then
-                model.rotation
-            else
-                updateRotationMatrix dx dy model.rotation
-    in
-        { model | ndcPos = ndcPosNew, rotation = rotation } ! []
-
-
-updateRotationMatrix : Float -> Float -> Mat4 -> Mat4
-updateRotationMatrix dx dy rot =
-    let
         angle =
             dx ^ 2 + dy ^ 2 |> sqrt
 
         axis =
-            vec3 (-dy / angle) (dx / angle) 0.0
+            if angle == 0 then
+                vec3 0 0 1
+            else
+                vec3 (-dy / angle) (dx / angle) 0
+
+        deltaRot =
+            Mat4.makeRotate angle axis
+
+        rotation =
+            Mat4.mul deltaRot model.rotation
     in
-        Mat4.mul (Mat4.makeRotate angle axis) rot
+        { model
+            | ndcPos = ndcPosNew
+            , deltaRot = deltaRot
+            , rotation = rotation
+        }
+            ! []
 
 
 subscriptions : Model -> Sub Msg
