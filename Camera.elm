@@ -15,7 +15,7 @@ module Camera
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
-import Html.Events exposing (onMouseUp, onMouseDown)
+import Html.Events exposing (onMouseUp, onMouseDown, onMouseLeave)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
@@ -40,8 +40,8 @@ type alias Model =
     , size : Size
     , origin : Position
     , mouseDown : Bool
-    , ndcPosOld : Position
-    , ndcPosNew : Position
+    , ndcPos : Position
+    , rotation : Mat4
     }
 
 
@@ -51,6 +51,7 @@ type Msg
     | MouseMoveMsg Mouse.Position
     | MouseUpMsg
     | MouseDownMsg
+    | MouseLeaveMsg
 
 
 resizeMsg : Size -> Msg
@@ -64,8 +65,8 @@ initialModel =
     , size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
     , mouseDown = False
-    , ndcPosOld = { x = 0, y = 0 }
-    , ndcPosNew = { x = 0, y = 0 }
+    , ndcPos = { x = 0, y = 0 }
+    , rotation = Mat4.identity
     }
 
 
@@ -79,13 +80,57 @@ update msg model =
             { model | size = size } ! []
 
         MouseMoveMsg pos ->
-            { model | ndcPosNew = ndcPos pos.x pos.y model } ! []
+            mouseMoveUpdate pos model
 
         MouseDownMsg ->
-            { model | mouseDown = True, ndcPosOld = model.ndcPosNew } ! []
+            { model | mouseDown = True } ! []
 
         MouseUpMsg ->
             { model | mouseDown = False } ! []
+
+        MouseLeaveMsg ->
+            { model | mouseDown = False } ! []
+
+
+mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
+mouseMoveUpdate pos model =
+    if model.mouseDown then
+        dragMouse pos model
+    else
+        { model | ndcPos = ndcPos pos.x pos.y model } ! []
+
+
+dragMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
+dragMouse pos model =
+    let
+        ndcPosNew =
+            ndcPos pos.x pos.y model
+
+        dx =
+            (ndcPosNew.x - model.ndcPos.x) * pi / 2
+
+        dy =
+            (ndcPosNew.y - model.ndcPos.y) * pi / 2
+
+        rotation =
+            if dx == 0 && dy == 0 then
+                model.rotation
+            else
+                updateRotationMatrix dx dy model.rotation
+    in
+        { model | ndcPos = ndcPosNew, rotation = rotation } ! []
+
+
+updateRotationMatrix : Float -> Float -> Mat4 -> Mat4
+updateRotationMatrix dx dy rot =
+    let
+        angle =
+            dx ^ 2 + dy ^ 2 |> sqrt
+
+        axis =
+            vec3 (-dy / angle) (dx / angle) 0.0
+    in
+        Mat4.mul (Mat4.makeRotate angle axis) rot
 
 
 subscriptions : Model -> Sub Msg
@@ -104,6 +149,7 @@ view entities model =
         , style [ ( "display", "block" ), ( "background", "black" ) ]
         , onMouseDown MouseDownMsg
         , onMouseUp MouseUpMsg
+        , onMouseLeave MouseLeaveMsg
         ]
         entities
 
@@ -125,26 +171,14 @@ cameraDistance =
     5.0
 
 
-scaleTo : Float -> Vec3 -> Vec3
-scaleTo length vec =
-    vec |> Vec3.normalize |> Vec3.scale length
-
-
-cameraPosition : Model -> Vec3
-cameraPosition model =
-    vec3 model.ndcPosNew.x model.ndcPosNew.y 1 |> scaleTo cameraDistance
+cameraMatrix : Mat4
+cameraMatrix =
+    Mat4.makeLookAt (vec3 0 0 cameraDistance) (vec3 0 0 0) (vec3 0 1 0)
 
 
 viewingMatrix : Model -> Mat4
 viewingMatrix model =
-    let
-        cameraMatrix =
-            Mat4.makeLookAt (cameraPosition model) (vec3 0 0 0) (vec3 0 1 0)
-
-        rotationMatrix =
-            Mat4.makeRotate (0.1 * model.time) (vec3 0 1 0)
-    in
-        Mat4.mul cameraMatrix rotationMatrix
+    Mat4.mul cameraMatrix model.rotation
 
 
 perspectiveMatrix : Model -> Mat4
