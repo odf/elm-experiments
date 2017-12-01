@@ -111,26 +111,54 @@ mouseMoveUpdate pos model =
         { model | ndcPos = ndcPos pos.x pos.y model } ! []
 
 
+zRotationAngle : Float -> Float -> Float -> Float -> Float
+zRotationAngle px py dx dy =
+    if abs dx > abs dy then
+        if py > 0 then
+            -dx
+        else
+            dx
+    else if px < 0 then
+        -dy
+    else
+        dy
+
+
+rotationParameters : Position -> Position -> ( Vec3, Float )
+rotationParameters newPos oldPos =
+    let
+        dx =
+            (newPos.x - oldPos.x) * pi / 2
+
+        dy =
+            (newPos.y - oldPos.y) * pi / 2
+
+        aroundZ =
+            abs newPos.x > 0.9 || abs newPos.y > 0.9
+
+        angle =
+            if aroundZ then
+                zRotationAngle newPos.x newPos.y dx dy
+            else
+                dx ^ 2 + dy ^ 2 |> sqrt
+
+        axis =
+            if angle == 0 || aroundZ then
+                vec3 0 0 1
+            else
+                vec3 (-dy / angle) (dx / angle) 0
+    in
+        ( axis, angle )
+
+
 dragMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
 dragMouse pos model =
     let
         ndcPosNew =
             ndcPos pos.x pos.y model
 
-        dx =
-            (ndcPosNew.x - model.ndcPos.x) * pi / 2
-
-        dy =
-            (ndcPosNew.y - model.ndcPos.y) * pi / 2
-
-        angle =
-            dx ^ 2 + dy ^ 2 |> sqrt
-
-        axis =
-            if angle == 0 then
-                vec3 0 0 1
-            else
-                vec3 (-dy / angle) (dx / angle) 0
+        ( axis, angle ) =
+            rotationParameters ndcPosNew model.ndcPos
 
         deltaRot =
             Mat4.makeRotate angle axis
