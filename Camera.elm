@@ -113,15 +113,16 @@ mouseMoveUpdate pos model =
 
 zRotationAngle : Float -> Float -> Float -> Float -> Float
 zRotationAngle px py dx dy =
-    if abs dx > abs dy then
-        if py > 0 then
-            -dx
-        else
-            dx
-    else if px < 0 then
-        -dy
-    else
+    if px > 0.9 then
         dy
+    else if px < -0.9 then
+        -dy
+    else if py > 0.9 then
+        -dx
+    else if py < -0.9 then
+        dx
+    else
+        0
 
 
 rotationParameters : Position -> Position -> ( Vec3, Float )
