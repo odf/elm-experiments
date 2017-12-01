@@ -15,7 +15,7 @@ module Camera
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
-import Html.Events exposing (onMouseUp, onMouseDown, onMouseLeave)
+import Html.Events
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
@@ -51,9 +51,8 @@ type Msg
     = FrameMsg Time
     | ResizeMsg Size
     | MouseMoveMsg Mouse.Position
-    | MouseUpMsg
+    | MouseUpMsg Mouse.Position
     | MouseDownMsg
-    | MouseLeaveMsg
 
 
 resizeMsg : Size -> Msg
@@ -89,10 +88,7 @@ update msg model =
         MouseDownMsg ->
             { model | dragging = True, deltaRot = Mat4.identity } ! []
 
-        MouseUpMsg ->
-            { model | dragging = False } ! []
-
-        MouseLeaveMsg ->
+        MouseUpMsg pos ->
             { model | dragging = False } ! []
 
 
@@ -156,6 +152,7 @@ subscriptions _ =
     Sub.batch
         [ AnimationFrame.times FrameMsg
         , Mouse.moves MouseMoveMsg
+        , Mouse.ups MouseUpMsg
         ]
 
 
@@ -165,9 +162,7 @@ view entities model =
         [ width (round model.size.width)
         , height (round model.size.height)
         , style [ ( "display", "block" ), ( "background", "black" ) ]
-        , onMouseDown MouseDownMsg
-        , onMouseUp MouseUpMsg
-        , onMouseLeave MouseLeaveMsg
+        , Html.Events.onMouseDown MouseDownMsg
         ]
         entities
 
