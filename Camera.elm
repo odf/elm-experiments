@@ -43,6 +43,7 @@ type alias Model =
     , ndcPos : Position
     , rotation : Mat4
     , deltaRot : Mat4
+    , moved : Bool
     }
 
 
@@ -69,6 +70,7 @@ initialModel =
     , ndcPos = { x = 0, y = 0 }
     , rotation = Mat4.identity
     , deltaRot = Mat4.identity
+    , moved = False
     }
 
 
@@ -76,14 +78,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FrameMsg time ->
-            { model
-                | rotation =
-                    if model.dragging then
-                        model.rotation
-                    else
-                        Mat4.mul model.deltaRot model.rotation
-            }
-                ! []
+            frameUpdate time model
 
         ResizeMsg size ->
             { model | size = size } ! []
@@ -99,6 +94,17 @@ update msg model =
 
         MouseLeaveMsg ->
             { model | dragging = False } ! []
+
+
+frameUpdate : Float -> Model -> ( Model, Cmd Msg )
+frameUpdate float model =
+    if model.dragging then
+        if model.moved then
+            { model | moved = False } ! []
+        else
+            { model | deltaRot = Mat4.identity } ! []
+    else
+        { model | rotation = Mat4.mul model.deltaRot model.rotation } ! []
 
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
@@ -140,6 +146,7 @@ dragMouse pos model =
             | ndcPos = ndcPosNew
             , deltaRot = deltaRot
             , rotation = rotation
+            , moved = angle > 0
         }
             ! []
 
