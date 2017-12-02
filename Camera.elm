@@ -19,6 +19,7 @@ import Html.Events
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
+import Keyboard
 import Time exposing (Time)
 import WebGL
 
@@ -35,15 +36,23 @@ type alias Position =
     }
 
 
+type alias Modifiers =
+    { shift : Bool
+    , ctrl : Bool
+    }
+
+
 type alias Model =
     { time : Float
     , size : Size
     , origin : Position
     , dragging : Bool
     , ndcPos : Position
+    , shift : Vec3
     , rotation : Mat4
     , deltaRot : Mat4
     , moved : Bool
+    , modifiers : Modifiers
     }
 
 
@@ -53,6 +62,8 @@ type Msg
     | MouseMoveMsg Mouse.Position
     | MouseUpMsg Mouse.Position
     | MouseDownMsg
+    | KeyDownMsg Int
+    | KeyUpMsg Int
 
 
 resizeMsg : Size -> Msg
@@ -70,6 +81,8 @@ initialModel =
     , rotation = Mat4.identity
     , deltaRot = Mat4.identity
     , moved = False
+    , modifiers = { shift = False, ctrl = False }
+    , shift = vec3 0 0 0
     }
 
 
@@ -91,6 +104,28 @@ update msg model =
         MouseUpMsg pos ->
             { model | dragging = False } ! []
 
+        KeyUpMsg keyCode ->
+            { model
+                | modifiers = updateModifiers keyCode False model.modifiers
+            }
+                ! []
+
+        KeyDownMsg keyCode ->
+            { model
+                | modifiers = updateModifiers keyCode True model.modifiers
+            }
+                ! []
+
+
+updateModifiers : Int -> Bool -> Modifiers -> Modifiers
+updateModifiers keyCode value oldMods =
+    if keyCode == 16 then
+        { oldMods | shift = value }
+    else if keyCode == 17 then
+        { oldMods | ctrl = value }
+    else
+        oldMods
+
 
 frameUpdate : Float -> Model -> ( Model, Cmd Msg )
 frameUpdate float model =
@@ -106,9 +141,62 @@ frameUpdate float model =
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
 mouseMoveUpdate pos model =
     if model.dragging then
-        dragMouse pos model
+        if model.modifiers.shift then
+            panMouse pos model
+        else
+            rotateMouse pos model
     else
         { model | ndcPos = ndcPos pos.x pos.y model } ! []
+
+
+panMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
+panMouse pos model =
+    let
+        ndcPosNew =
+            ndcPos pos.x pos.y model
+
+        dx =
+            ndcPosNew.x - model.ndcPos.x
+
+        dy =
+            ndcPosNew.y - model.ndcPos.y
+
+        invRot =
+            Mat4.inverseOrthonormal model.rotation
+
+        shift =
+            Mat4.transform invRot <| vec3 dx dy 0
+    in
+        { model
+            | ndcPos = ndcPosNew
+            , moved = dx /= 0 || dy /= 0
+            , shift = Vec3.add model.shift shift
+        }
+            ! []
+
+
+rotateMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
+rotateMouse pos model =
+    let
+        ndcPosNew =
+            ndcPos pos.x pos.y model
+
+        ( axis, angle ) =
+            rotationParameters ndcPosNew model.ndcPos
+
+        deltaRot =
+            Mat4.makeRotate angle axis
+
+        rotation =
+            Mat4.mul deltaRot model.rotation
+    in
+        { model
+            | ndcPos = ndcPosNew
+            , deltaRot = deltaRot
+            , rotation = rotation
+            , moved = angle > 0
+        }
+            ! []
 
 
 zRotationAngle : Float -> Float -> Float -> Float -> Float
@@ -152,36 +240,14 @@ rotationParameters newPos oldPos =
         ( axis, angle )
 
 
-dragMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
-dragMouse pos model =
-    let
-        ndcPosNew =
-            ndcPos pos.x pos.y model
-
-        ( axis, angle ) =
-            rotationParameters ndcPosNew model.ndcPos
-
-        deltaRot =
-            Mat4.makeRotate angle axis
-
-        rotation =
-            Mat4.mul deltaRot model.rotation
-    in
-        { model
-            | ndcPos = ndcPosNew
-            , deltaRot = deltaRot
-            , rotation = rotation
-            , moved = angle > 0
-        }
-            ! []
-
-
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ AnimationFrame.times FrameMsg
         , Mouse.moves MouseMoveMsg
         , Mouse.ups MouseUpMsg
+        , Keyboard.downs KeyDownMsg
+        , Keyboard.ups KeyUpMsg
         ]
 
 
@@ -220,7 +286,11 @@ cameraMatrix =
 
 viewingMatrix : Model -> Mat4
 viewingMatrix model =
-    Mat4.mul cameraMatrix model.rotation
+    let
+        shift =
+            Mat4.makeTranslate model.shift
+    in
+        Mat4.mul cameraMatrix <| Mat4.mul model.rotation shift
 
 
 perspectiveMatrix : Model -> Mat4
