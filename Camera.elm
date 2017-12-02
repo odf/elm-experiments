@@ -43,8 +43,7 @@ type alias Modifiers =
 
 
 type alias Model =
-    { time : Float
-    , size : Size
+    { size : Size
     , origin : Position
     , dragging : Bool
     , ndcPos : Position
@@ -73,8 +72,7 @@ resizeMsg size =
 
 initialModel : Model
 initialModel =
-    { time = 0
-    , size = { width = 0, height = 0 }
+    { size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
     , dragging = False
     , ndcPos = { x = 0, y = 0 }
