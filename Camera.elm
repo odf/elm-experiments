@@ -7,7 +7,6 @@ module Camera
         , subscriptions
         , update
         , view
-        , cameraDistance
         , perspectiveMatrix
         , viewingMatrix
         )
@@ -45,6 +44,8 @@ type alias Modifiers =
 type alias Model =
     { size : Size
     , origin : Position
+    , cameraDistance : Float
+    , fieldOfView : Float
     , dragging : Bool
     , ndcPos : Position
     , shift : Vec3
@@ -74,6 +75,8 @@ initialModel : Model
 initialModel =
     { size = { width = 0, height = 0 }
     , origin = { x = 0, y = 0 }
+    , cameraDistance = 5
+    , fieldOfView = 45
     , dragging = False
     , ndcPos = { x = 0, y = 0 }
     , rotation = Mat4.identity
@@ -272,23 +275,19 @@ ndcPos posX posY model =
         { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
 
 
-cameraDistance : Float
-cameraDistance =
-    5.0
-
-
-cameraMatrix : Mat4
-cameraMatrix =
-    Mat4.makeLookAt (vec3 0 0 cameraDistance) (vec3 0 0 0) (vec3 0 1 0)
-
-
 viewingMatrix : Model -> Mat4
 viewingMatrix model =
     let
+        camVector =
+            vec3 0 0 model.cameraDistance
+
+        camMatrix =
+            Mat4.makeLookAt camVector (vec3 0 0 0) (vec3 0 1 0)
+
         shift =
             Mat4.makeTranslate model.shift
     in
-        Mat4.mul cameraMatrix <| Mat4.mul model.rotation shift
+        Mat4.mul camMatrix <| Mat4.mul model.rotation shift
 
 
 perspectiveMatrix : Model -> Mat4
@@ -298,7 +297,7 @@ perspectiveMatrix model =
             model.size.width / model.size.height
 
         fov =
-            45
+            model.fieldOfView
 
         fovy =
             if aspectRatio >= 1 then

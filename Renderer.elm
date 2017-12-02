@@ -58,7 +58,7 @@ entity : Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
 entity mesh material model =
     let
         camDist =
-            Camera.cameraDistance
+            model.cameraDistance
 
         uniforms =
             { viewing = Camera.viewingMatrix model
