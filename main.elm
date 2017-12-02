@@ -42,7 +42,7 @@ initMaterial =
     , ka = 0.0
     , kd = 1.0
     , ks = 0.2
-    , shininess = 4.0
+    , shininess = 20.0
     }
 
 
