@@ -63,10 +63,10 @@ entity mesh material model =
         uniforms =
             { viewing = Camera.viewingMatrix model
             , perspective = Camera.perspectiveMatrix model
-            , cameraPos = vec3 0 0 -camDist
-            , light1Pos = vec3 -1 1 -2 |> scaleTo (50 * camDist)
+            , cameraPos = vec3 0 0 camDist
+            , light1Pos = vec3 -1 1 2 |> scaleTo (50 * camDist)
             , light1Color = vec3 1 1 1
-            , light2Pos = vec3 2 0 -1 |> scaleTo (50 * camDist)
+            , light2Pos = vec3 2 0 1 |> scaleTo (50 * camDist)
             , light2Color = vec3 0 0 1
             , ambientColor = material.ambientColor
             , diffuseColor = material.diffuseColor
@@ -96,7 +96,7 @@ vertexShader =
     void main () {
         vcolor = color;
         vpos = (viewing * vec4(pos, 1.0)).xyz;
-        vnormal = (viewing * vec4(pos, 1.0)).xyz;
+        vnormal = (viewing * vec4(normal, 0.0)).xyz;
         gl_Position = perspective * viewing * vec4(pos, 1.0);
     }
 
