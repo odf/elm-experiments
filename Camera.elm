@@ -120,7 +120,7 @@ update msg model =
                 ! []
 
         WheelMsg value ->
-            model ! []
+            wheelUpdate value model
 
 
 subscriptions : Model -> Sub Msg
@@ -176,6 +176,26 @@ mouseMoveUpdate pos model =
             rotateMouse pos model
     else
         { model | ndcPos = ndcPos pos.x pos.y model } ! []
+
+
+wheelUpdate : Float -> Model -> ( Model, Cmd Msg )
+wheelUpdate value model =
+    let
+        factor =
+            if value > 0 then
+                0.9
+            else if value < 0 then
+                1 / 0.9
+            else
+                1.0
+
+        newModel =
+            if model.modifiers.shift then
+                { model | fieldOfView = factor * model.fieldOfView }
+            else
+                { model | cameraDistance = factor * model.cameraDistance }
+    in
+        newModel ! []
 
 
 panMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
