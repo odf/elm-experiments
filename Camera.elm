@@ -21,6 +21,7 @@ import Mouse
 import Keyboard
 import Time exposing (Time)
 import WebGL
+import WheelEvent
 
 
 type alias Size =
@@ -64,6 +65,7 @@ type Msg
     | MouseDownMsg
     | KeyDownMsg Int
     | KeyUpMsg Int
+    | WheelMsg Float
 
 
 resizeMsg : Size -> Msg
@@ -116,6 +118,32 @@ update msg model =
                 | modifiers = updateModifiers keyCode True model.modifiers
             }
                 ! []
+
+        WheelMsg value ->
+            model ! []
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ AnimationFrame.times FrameMsg
+        , Mouse.moves MouseMoveMsg
+        , Mouse.ups MouseUpMsg
+        , Keyboard.downs KeyDownMsg
+        , Keyboard.ups KeyUpMsg
+        ]
+
+
+view : List WebGL.Entity -> Model -> Html Msg
+view entities model =
+    WebGL.toHtml
+        [ width (round model.size.width)
+        , height (round model.size.height)
+        , style [ ( "display", "block" ), ( "background", "black" ) ]
+        , Html.Events.onMouseDown MouseDownMsg
+        , WheelEvent.onMouseWheel WheelMsg
+        ]
+        entities
 
 
 updateModifiers : Int -> Bool -> Modifiers -> Modifiers
@@ -239,28 +267,6 @@ rotationParameters newPos oldPos =
                 vec3 (-dy / angle) (dx / angle) 0
     in
         ( axis, angle )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ AnimationFrame.times FrameMsg
-        , Mouse.moves MouseMoveMsg
-        , Mouse.ups MouseUpMsg
-        , Keyboard.downs KeyDownMsg
-        , Keyboard.ups KeyUpMsg
-        ]
-
-
-view : List WebGL.Entity -> Model -> Html Msg
-view entities model =
-    WebGL.toHtml
-        [ width (round model.size.width)
-        , height (round model.size.height)
-        , style [ ( "display", "block" ), ( "background", "black" ) ]
-        , Html.Events.onMouseDown MouseDownMsg
-        ]
-        entities
 
 
 ndcPos : Int -> Int -> Model -> Position
