@@ -164,7 +164,11 @@ frameUpdate float model =
         else
             { model | deltaRot = Mat4.identity } ! []
     else
-        { model | rotation = Mat4.mul model.deltaRot model.rotation } ! []
+        let
+            rotation =
+                orthonormalized (Mat4.mul model.deltaRot model.rotation)
+        in
+            { model | rotation = rotation } ! []
 
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
@@ -241,7 +245,7 @@ rotateMouse ndcPosNew model =
             Mat4.makeRotate angle axis
 
         rotation =
-            Mat4.mul deltaRot model.rotation
+            orthonormalized <| Mat4.mul deltaRot model.rotation
     in
         { model
             | ndcPos = ndcPosNew
@@ -291,6 +295,37 @@ rotationParameters newPos oldPos =
                 vec3 (-dy / angle) (dx / angle) 0
     in
         ( axis, angle )
+
+
+projection : Vec3 -> Vec3 -> Vec3
+projection v n =
+    Vec3.scale (Vec3.dot v n) v
+
+
+orthonormalized : Mat4 -> Mat4
+orthonormalized m =
+    let
+        b1 =
+            Mat4.transform m <| vec3 1 0 0
+
+        b2 =
+            Mat4.transform m <| vec3 0 1 0
+
+        b3 =
+            Mat4.transform m <| vec3 0 0 1
+
+        n1 =
+            Vec3.normalize b1
+
+        n2 =
+            Vec3.normalize
+                (Vec3.sub b2 (projection b2 n1))
+
+        n3 =
+            Vec3.normalize
+                (Vec3.sub b3 (Vec3.add (projection b3 n1) (projection b3 n2)))
+    in
+        Mat4.makeBasis n1 n2 n3
 
 
 viewingMatrix : Model -> Mat4
