@@ -169,13 +169,23 @@ frameUpdate float model =
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
 mouseMoveUpdate pos model =
-    if model.dragging then
-        if model.modifiers.shift then
-            panMouse pos model
+    let
+        xRelative =
+            ((toFloat pos.x) - model.origin.x) / model.size.width
+
+        yRelative =
+            ((toFloat pos.y) - model.origin.y) / model.size.height
+
+        ndcPos =
+            { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
+    in
+        if model.dragging then
+            if model.modifiers.shift then
+                panMouse ndcPos model
+            else
+                rotateMouse ndcPos model
         else
-            rotateMouse pos model
-    else
-        { model | ndcPos = ndcPos pos.x pos.y model } ! []
+            { model | ndcPos = ndcPos } ! []
 
 
 wheelUpdate : Float -> Model -> ( Model, Cmd Msg )
@@ -198,12 +208,9 @@ wheelUpdate value model =
         newModel ! []
 
 
-panMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
-panMouse pos model =
+panMouse : Position -> Model -> ( Model, Cmd Msg )
+panMouse ndcPosNew model =
     let
-        ndcPosNew =
-            ndcPos pos.x pos.y model
-
         dx =
             ndcPosNew.x - model.ndcPos.x
 
@@ -224,12 +231,9 @@ panMouse pos model =
             ! []
 
 
-rotateMouse : Mouse.Position -> Model -> ( Model, Cmd Msg )
-rotateMouse pos model =
+rotateMouse : Position -> Model -> ( Model, Cmd Msg )
+rotateMouse ndcPosNew model =
     let
-        ndcPosNew =
-            ndcPos pos.x pos.y model
-
         ( axis, angle ) =
             rotationParameters ndcPosNew model.ndcPos
 
@@ -287,18 +291,6 @@ rotationParameters newPos oldPos =
                 vec3 (-dy / angle) (dx / angle) 0
     in
         ( axis, angle )
-
-
-ndcPos : Int -> Int -> Model -> Position
-ndcPos posX posY model =
-    let
-        xRelative =
-            ((toFloat posX) - model.origin.x) / model.size.width
-
-        yRelative =
-            ((toFloat posY) - model.origin.y) / model.size.height
-    in
-        { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
 
 
 viewingMatrix : Model -> Mat4
