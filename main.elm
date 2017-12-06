@@ -1,6 +1,8 @@
 module Main exposing (main)
 
+import Char
 import Html exposing (Html)
+import Keyboard
 import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
@@ -20,6 +22,7 @@ type alias Model =
 
 type Msg
     = ResizeMsg Window.Size
+    | KeyPressMsg Char.KeyCode
     | CameraMsg Camera.Msg
 
 
@@ -50,6 +53,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Window.resizes ResizeMsg
+        , Keyboard.presses KeyPressMsg
         , Sub.map CameraMsg <| Camera.subscriptions model.cameraModel
         ]
 
@@ -71,12 +75,79 @@ update msg model =
         ResizeMsg size ->
             let
                 sz =
-                    { width = toFloat size.width, height = toFloat size.height }
+                    { width = toFloat size.width
+                    , height = toFloat size.height
+                    }
             in
                 updateCamera (Camera.resizeMsg sz) model
 
+        KeyPressMsg code ->
+            let
+                char =
+                    Char.toLower <| Char.fromCode code
+            in
+                case char of
+                    'a' ->
+                        updateCamera lookAlongYzMsg model
+
+                    'b' ->
+                        updateCamera lookAlongXzMsg model
+
+                    'c' ->
+                        updateCamera lookAlongXyMsg model
+
+                    'd' ->
+                        updateCamera lookAlongXyzMsg model
+
+                    'x' ->
+                        updateCamera lookAlongXMsg model
+
+                    'y' ->
+                        updateCamera lookAlongYMsg model
+
+                    'z' ->
+                        updateCamera lookAlongZMsg model
+
+                    _ ->
+                        model ! []
+
         CameraMsg camMsg ->
             updateCamera camMsg model
+
+
+lookAlongXMsg : Camera.Msg
+lookAlongXMsg =
+    Camera.lookAtMsg (vec3 -1 0 0) (vec3 0 1 0)
+
+
+lookAlongYMsg : Camera.Msg
+lookAlongYMsg =
+    Camera.lookAtMsg (vec3 0 -1 0) (vec3 0 0 -1)
+
+
+lookAlongZMsg : Camera.Msg
+lookAlongZMsg =
+    Camera.lookAtMsg (vec3 0 0 -1) (vec3 0 1 0)
+
+
+lookAlongXyMsg : Camera.Msg
+lookAlongXyMsg =
+    Camera.lookAtMsg (vec3 -1 -1 0) (vec3 0 1 0)
+
+
+lookAlongXzMsg : Camera.Msg
+lookAlongXzMsg =
+    Camera.lookAtMsg (vec3 -1 0 -1) (vec3 0 1 0)
+
+
+lookAlongYzMsg : Camera.Msg
+lookAlongYzMsg =
+    Camera.lookAtMsg (vec3 0 -1 -1) (vec3 0 1 0)
+
+
+lookAlongXyzMsg : Camera.Msg
+lookAlongXyzMsg =
+    Camera.lookAtMsg (vec3 -1 -1 -1) (vec3 0 1 0)
 
 
 view : Model -> Html Msg

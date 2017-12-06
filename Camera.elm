@@ -3,6 +3,7 @@ module Camera
         ( Model
         , Msg
         , resizeMsg
+        , lookAtMsg
         , initialModel
         , subscriptions
         , update
@@ -60,6 +61,7 @@ type alias Model =
 type Msg
     = FrameMsg Time
     | ResizeMsg Size
+    | LookAtMsg Vec3 Vec3
     | MouseMoveMsg Mouse.Position
     | MouseUpMsg Mouse.Position
     | MouseDownMsg
@@ -71,6 +73,11 @@ type Msg
 resizeMsg : Size -> Msg
 resizeMsg size =
     ResizeMsg size
+
+
+lookAtMsg : Vec3 -> Vec3 -> Msg
+lookAtMsg axis up =
+    LookAtMsg axis up
 
 
 initialModel : Model
@@ -97,6 +104,13 @@ update msg model =
 
         ResizeMsg size ->
             { model | size = size } ! []
+
+        LookAtMsg axis up ->
+            let
+                rotation =
+                    Mat4.makeLookAt (vec3 0 0 0) axis up
+            in
+                { model | rotation = rotation } ! []
 
         MouseMoveMsg pos ->
             mouseMoveUpdate pos model
@@ -166,7 +180,7 @@ frameUpdate float model =
     else
         let
             rotation =
-                orthonormalized (Mat4.mul model.deltaRot model.rotation)
+                orthonormalized <| Mat4.mul model.deltaRot model.rotation
         in
             { model | rotation = rotation } ! []
 
