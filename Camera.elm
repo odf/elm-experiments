@@ -1,9 +1,7 @@
 module Camera
     exposing
         ( Model
-        , Msg
-        , resizeMsg
-        , lookAtMsg
+        , Msg(ResizeMsg, LookAtMsg)
         , initialModel
         , subscriptions
         , update
@@ -68,16 +66,6 @@ type Msg
     | KeyDownMsg Int
     | KeyUpMsg Int
     | WheelMsg Float
-
-
-resizeMsg : Size -> Msg
-resizeMsg size =
-    ResizeMsg size
-
-
-lookAtMsg : Vec3 -> Vec3 -> Msg
-lookAtMsg axis up =
-    LookAtMsg axis up
 
 
 initialModel : Model

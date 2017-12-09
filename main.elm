@@ -79,7 +79,7 @@ update msg model =
                     , height = toFloat size.height
                     }
             in
-                updateCamera (Camera.resizeMsg sz) model
+                updateCamera (Camera.ResizeMsg sz) model
 
         KeyPressMsg code ->
             let
@@ -117,37 +117,37 @@ update msg model =
 
 lookAlongXMsg : Camera.Msg
 lookAlongXMsg =
-    Camera.lookAtMsg (vec3 -1 0 0) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 -1 0 0) (vec3 0 1 0)
 
 
 lookAlongYMsg : Camera.Msg
 lookAlongYMsg =
-    Camera.lookAtMsg (vec3 0 -1 0) (vec3 0 0 -1)
+    Camera.LookAtMsg (vec3 0 -1 0) (vec3 0 0 -1)
 
 
 lookAlongZMsg : Camera.Msg
 lookAlongZMsg =
-    Camera.lookAtMsg (vec3 0 0 -1) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 0 0 -1) (vec3 0 1 0)
 
 
 lookAlongXyMsg : Camera.Msg
 lookAlongXyMsg =
-    Camera.lookAtMsg (vec3 -1 -1 0) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 -1 -1 0) (vec3 0 1 0)
 
 
 lookAlongXzMsg : Camera.Msg
 lookAlongXzMsg =
-    Camera.lookAtMsg (vec3 -1 0 -1) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 -1 0 -1) (vec3 0 1 0)
 
 
 lookAlongYzMsg : Camera.Msg
 lookAlongYzMsg =
-    Camera.lookAtMsg (vec3 0 -1 -1) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 0 -1 -1) (vec3 0 1 0)
 
 
 lookAlongXyzMsg : Camera.Msg
 lookAlongXyzMsg =
-    Camera.lookAtMsg (vec3 -1 -1 -1) (vec3 0 1 0)
+    Camera.LookAtMsg (vec3 -1 -1 -1) (vec3 0 1 0)
 
 
 view : Model -> Html Msg
