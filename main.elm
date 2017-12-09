@@ -85,69 +85,37 @@ update msg model =
             let
                 char =
                     Char.toLower <| Char.fromCode code
+
+                lookAlong axis up =
+                    updateCamera (Camera.LookAtMsg axis up) model
             in
                 case char of
                     'a' ->
-                        updateCamera lookAlongYzMsg model
+                        lookAlong (vec3 0 -1 -1) (vec3 0 1 0)
 
                     'b' ->
-                        updateCamera lookAlongXzMsg model
+                        lookAlong (vec3 -1 0 -1) (vec3 0 1 0)
 
                     'c' ->
-                        updateCamera lookAlongXyMsg model
+                        lookAlong (vec3 -1 -1 0) (vec3 0 1 0)
 
                     'd' ->
-                        updateCamera lookAlongXyzMsg model
+                        lookAlong (vec3 -1 -1 -1) (vec3 0 1 0)
 
                     'x' ->
-                        updateCamera lookAlongXMsg model
+                        lookAlong (vec3 -1 0 0) (vec3 0 1 0)
 
                     'y' ->
-                        updateCamera lookAlongYMsg model
+                        lookAlong (vec3 0 -1 0) (vec3 0 0 -1)
 
                     'z' ->
-                        updateCamera lookAlongZMsg model
+                        lookAlong (vec3 0 0 -1) (vec3 0 1 0)
 
                     _ ->
                         model ! []
 
         CameraMsg camMsg ->
             updateCamera camMsg model
-
-
-lookAlongXMsg : Camera.Msg
-lookAlongXMsg =
-    Camera.LookAtMsg (vec3 -1 0 0) (vec3 0 1 0)
-
-
-lookAlongYMsg : Camera.Msg
-lookAlongYMsg =
-    Camera.LookAtMsg (vec3 0 -1 0) (vec3 0 0 -1)
-
-
-lookAlongZMsg : Camera.Msg
-lookAlongZMsg =
-    Camera.LookAtMsg (vec3 0 0 -1) (vec3 0 1 0)
-
-
-lookAlongXyMsg : Camera.Msg
-lookAlongXyMsg =
-    Camera.LookAtMsg (vec3 -1 -1 0) (vec3 0 1 0)
-
-
-lookAlongXzMsg : Camera.Msg
-lookAlongXzMsg =
-    Camera.LookAtMsg (vec3 -1 0 -1) (vec3 0 1 0)
-
-
-lookAlongYzMsg : Camera.Msg
-lookAlongYzMsg =
-    Camera.LookAtMsg (vec3 0 -1 -1) (vec3 0 1 0)
-
-
-lookAlongXyzMsg : Camera.Msg
-lookAlongXyzMsg =
-    Camera.LookAtMsg (vec3 -1 -1 -1) (vec3 0 1 0)
 
 
 view : Model -> Html Msg
