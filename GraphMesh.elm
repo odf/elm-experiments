@@ -19,6 +19,14 @@ graph =
     ]
 
 
+vertex : Vec3 -> Renderer.Vertex
+vertex pos =
+    { color = (vec3 1 1 1)
+    , pos = pos
+    , normal = pos
+    }
+
+
 lines : List ( Vec3, List Int ) -> List ( Vertex, Vertex )
 lines items =
     let
@@ -28,25 +36,14 @@ lines items =
         positions =
             Array.fromList <| List.map (\( v, _ ) -> v) items
 
-        vertex pos =
-            { color = (vec3 1 1 1)
-            , pos = pos
-            , normal = pos
-            }
-
         edge p1 p2 =
             ( (vertex p1), (vertex p2) )
 
         getPos v =
-            case Array.get (v - 1) positions of
-                Nothing ->
-                    vec3 0 0 0
-
-                Just p ->
-                    p
+            Array.get (v - 1) positions
 
         edges v ( _, adj ) =
-            List.map (\w -> edge (getPos v) (getPos w)) adj
+            List.filterMap (\w -> Maybe.map2 edge (getPos v) (getPos w)) adj
     in
         List.concat <| List.map2 edges (List.range 1 n) items
 
