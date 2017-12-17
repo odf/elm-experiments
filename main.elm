@@ -7,7 +7,6 @@ import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import Window
-import Cube
 import GraphMesh
 import Camera
 import Renderer
@@ -40,10 +39,10 @@ init =
 
 initMaterial : Renderer.Material
 initMaterial =
-    { ambientColor = vec3 1 1 1
+    { ambientColor = vec3 1 1 2
     , diffuseColor = vec3 1 1 1
     , specularColor = vec3 1 1 1
-    , ka = 0.0
+    , ka = 0.1
     , kd = 1.0
     , ks = 0.2
     , shininess = 20.0

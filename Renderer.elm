@@ -141,8 +141,9 @@ fragmentShader =
 
         vec3 cd = kd * diffuse * diffuseColor * vcolor;
         vec3 cs = ks * specular * specularColor;
+        vec3 ca = ka * ambientColor;
 
-        return lightColor * (cd + cs);
+        return ca + lightColor * (cd + cs);
     }
 
     void main () {
