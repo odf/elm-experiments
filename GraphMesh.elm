@@ -1,7 +1,7 @@
 module GraphMesh exposing (mesh)
 
 import Array exposing (Array)
-import Math.Vector3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import WebGL
 import Renderer exposing (Vertex)
 
@@ -149,16 +149,19 @@ nGon n =
 tutteInitial : List Int -> Adjacencies -> Embedding
 tutteInitial outer adj =
     let
-        set ( idx, val ) a =
+        setValue ( idx, val ) a =
             Array.set idx val a
 
-        specs =
-            List.map2 (,) outer (nGon (List.length outer))
-    in
-        List.foldl
-            set
+        init =
             (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
-            specs
+
+        shifted v =
+            Vec3.sub (Vec3.scale (cos (pi / 3)) v) (vec3 0 0 (sin (pi / 3)))
+
+        specs =
+            List.map2 (,) outer (List.map shifted (nGon (List.length outer)))
+    in
+        List.foldl setValue init specs
 
 
 tutte : Adjacencies -> Embedding
