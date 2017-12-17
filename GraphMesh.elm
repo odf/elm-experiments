@@ -90,7 +90,7 @@ cube =
 
 mesh : WebGL.Mesh Renderer.Vertex
 mesh =
-    WebGL.lines <| lines cube
+    WebGL.lines <| lines (embed tutte cube)
 
 
 
@@ -110,10 +110,62 @@ nextCyclic v vs =
             Nothing
 
 
-prevEdge : ( Int, Int ) -> Adjacencies -> Maybe ( Int, Int )
-prevEdge ( v, w ) adjacencies =
+face : Int -> Int -> Adjacencies -> Maybe (List Int)
+face v0 w0 adj =
     let
-        nbs =
-            Maybe.withDefault [] (Array.get v adjacencies)
+        next u v vs =
+            if u == v0 then
+                Just (u :: vs)
+            else
+                step u v (u :: vs)
+
+        step v w vs =
+            Array.get v adj
+                |> Maybe.andThen (\nbs -> nextCyclic w nbs)
+                |> Maybe.andThen (\u -> next u v vs)
     in
-        Maybe.andThen (\u -> Just ( u, v )) (nextCyclic w nbs)
+        step v0 w0 []
+
+
+firstFace : Adjacencies -> Maybe (List Int)
+firstFace adj =
+    Array.get 0 adj
+        |> Maybe.andThen (\vs -> List.head vs)
+        |> Maybe.andThen (\w -> face 0 w adj)
+
+
+nGon : Int -> List Vec3
+nGon n =
+    let
+        angle i =
+            2 * pi * (toFloat i) / (toFloat n)
+
+        corner i =
+            vec3 (cos (angle i)) (sin (angle i)) 0.0
+    in
+        List.map corner (List.range 0 (n - 1))
+
+
+tutteInitial : List Int -> Adjacencies -> Embedding
+tutteInitial outer adj =
+    let
+        set ( idx, val ) a =
+            Array.set idx val a
+
+        specs =
+            List.map2 (,) outer (nGon (List.length outer))
+    in
+        List.foldl
+            set
+            (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
+            specs
+
+
+tutte : Adjacencies -> Embedding
+tutte adj =
+    case firstFace adj of
+        Just f ->
+            tutteInitial f adj
+
+        Nothing ->
+            Array.empty
