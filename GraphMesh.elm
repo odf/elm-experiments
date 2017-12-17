@@ -88,6 +88,35 @@ cube =
     }
 
 
+dodecahedron : Graph
+dodecahedron =
+    { adjacencies =
+        Array.fromList
+            [ [ 1, 5, 4 ]
+            , [ 2, 6, 0 ]
+            , [ 3, 7, 1 ]
+            , [ 4, 8, 2 ]
+            , [ 0, 9, 3 ]
+            , [ 0, 11, 10 ]
+            , [ 1, 12, 11 ]
+            , [ 2, 13, 12 ]
+            , [ 3, 14, 13 ]
+            , [ 4, 10, 14 ]
+            , [ 5, 15, 9 ]
+            , [ 6, 19, 5 ]
+            , [ 7, 18, 6 ]
+            , [ 8, 17, 7 ]
+            , [ 9, 16, 8 ]
+            , [ 10, 19, 16 ]
+            , [ 14, 15, 17 ]
+            , [ 13, 16, 18 ]
+            , [ 12, 17, 19 ]
+            , [ 11, 18, 15 ]
+            ]
+    , positions = Nothing
+    }
+
+
 mesh : WebGL.Mesh Renderer.Vertex
 mesh =
     WebGL.lines <| lines (embed tutte cube)
@@ -155,8 +184,11 @@ tutteInitial outer adj =
         init =
             (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
 
+        alpha =
+            pi / 16
+
         shifted v =
-            Vec3.sub (Vec3.scale (cos (pi / 3)) v) (vec3 0 0 (sin (pi / 3)))
+            Vec3.sub (Vec3.scale (sin alpha) v) (vec3 0 0 (cos alpha))
 
         specs =
             List.map2 (,) outer (List.map shifted (nGon (List.length outer)))
@@ -164,11 +196,43 @@ tutteInitial outer adj =
         List.foldl setValue init specs
 
 
+center : List Vec3 -> Vec3
+center points =
+    Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
+
+
+amap2 : (a -> b -> c) -> Array a -> Array b -> Array c
+amap2 fn xs ys =
+    Array.fromList (List.map2 fn (Array.toList xs) (Array.toList ys))
+
+
+tutteStep : Embedding -> Adjacencies -> Embedding
+tutteStep pos adj =
+    let
+        getPos v =
+            Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
+
+        moved p q =
+            center [ p, center [ p, q ] ]
+
+        newPos ( p, vs ) =
+            center (List.map (\v -> moved p (getPos v)) vs)
+    in
+        Array.map newPos (amap2 (,) pos adj)
+
+
 tutte : Adjacencies -> Embedding
 tutte adj =
-    case firstFace adj of
-        Just f ->
-            tutteInitial f adj
+    let
+        next _ positions =
+            tutteStep positions adj
+    in
+        case firstFace adj of
+            Just f ->
+                List.foldl
+                    next
+                    (tutteInitial f adj)
+                    (List.range 1 10)
 
-        Nothing ->
-            Array.empty
+            Nothing ->
+                Array.empty
