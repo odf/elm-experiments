@@ -24,34 +24,6 @@ type alias Embedder =
     Adjacencies -> Embedding
 
 
-cube : Graph
-cube =
-    { adjacencies =
-        Array.fromList
-            [ [ 4, 3, 1 ]
-            , [ 5, 0, 2 ]
-            , [ 6, 1, 3 ]
-            , [ 7, 2, 0 ]
-            , [ 0, 5, 7 ]
-            , [ 1, 6, 4 ]
-            , [ 2, 7, 5 ]
-            , [ 3, 4, 6 ]
-            ]
-    , positions =
-        Just <|
-            Array.fromList
-                [ (vec3 -1 -1 -1)
-                , (vec3 1 -1 -1)
-                , (vec3 1 1 -1)
-                , (vec3 -1 1 -1)
-                , (vec3 -1 -1 1)
-                , (vec3 1 -1 1)
-                , (vec3 1 1 1)
-                , (vec3 -1 1 1)
-                ]
-    }
-
-
 vertex : Vec3 -> Renderer.Vertex
 vertex pos =
     { color = (vec3 1 1 1)
@@ -84,6 +56,64 @@ embed embedder graph =
     { graph | positions = Just (embedder graph.adjacencies) }
 
 
+
+-- Using a fixed example graph for now
+
+
+cube : Graph
+cube =
+    { adjacencies =
+        Array.fromList
+            [ [ 4, 3, 1 ]
+            , [ 5, 0, 2 ]
+            , [ 6, 1, 3 ]
+            , [ 7, 2, 0 ]
+            , [ 0, 5, 7 ]
+            , [ 1, 6, 4 ]
+            , [ 2, 7, 5 ]
+            , [ 3, 4, 6 ]
+            ]
+    , positions =
+        Just <|
+            Array.fromList
+                [ (vec3 -1 -1 -1)
+                , (vec3 1 -1 -1)
+                , (vec3 1 1 -1)
+                , (vec3 -1 1 -1)
+                , (vec3 -1 -1 1)
+                , (vec3 1 -1 1)
+                , (vec3 1 1 1)
+                , (vec3 -1 1 1)
+                ]
+    }
+
+
 mesh : WebGL.Mesh Renderer.Vertex
 mesh =
     WebGL.lines <| lines cube
+
+
+
+-- Code for Tutte embedder starts here
+
+
+nextCyclic : Int -> List Int -> Maybe Int
+nextCyclic v vs =
+    case vs of
+        v :: w :: rest ->
+            Just w
+
+        v :: [] ->
+            List.head vs
+
+        [] ->
+            Nothing
+
+
+prevEdge : ( Int, Int ) -> Adjacencies -> Maybe ( Int, Int )
+prevEdge ( v, w ) adjacencies =
+    let
+        nbs =
+            Maybe.withDefault [] (Array.get v adjacencies)
+    in
+        Maybe.andThen (\u -> Just ( u, v )) (nextCyclic w nbs)
