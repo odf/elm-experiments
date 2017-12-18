@@ -126,46 +126,45 @@ mesh =
 -- Code for Tutte embedder starts here
 
 
-nextCyclic : Int -> List Int -> Maybe Int
-nextCyclic v vs =
-    let
-        step rest =
-            case rest of
-                a :: b :: rest ->
-                    if a == v then
-                        Just b
-                    else
-                        step (b :: rest)
+tailFrom : a -> List a -> List a
+tailFrom a aList =
+    case aList of
+        [] ->
+            []
 
-                a :: [] ->
-                    if a == v then
-                        List.head vs
-                    else
-                        Nothing
+        x :: rest ->
+            if x == a then
+                rest
+            else
+                tailFrom a rest
 
-                [] ->
-                    Nothing
-    in
-        step vs
+
+nextCyclic : a -> List a -> Maybe a
+nextCyclic a aList =
+    case tailFrom a aList of
+        [] ->
+            Nothing
+
+        a :: [] ->
+            List.head aList
+
+        a :: b :: _ ->
+            Just b
 
 
 face : Int -> Int -> Adjacencies -> Maybe (List Int)
 face v0 w0 adj =
     let
         step v w rest =
-            let
-                u =
-                    Maybe.andThen (nextCyclic w) (Array.get v adj)
-            in
-                case u of
-                    Nothing ->
-                        Nothing
+            case Maybe.andThen (nextCyclic w) (Array.get v adj) of
+                Nothing ->
+                    Nothing
 
-                    Just u ->
-                        if u == v0 || List.length rest > Array.length adj then
-                            Just (w :: rest)
-                        else
-                            step u v (w :: rest)
+                Just u ->
+                    if u == v0 || List.length rest > Array.length adj then
+                        Just (w :: rest)
+                    else
+                        step u v (w :: rest)
     in
         step v0 w0 []
 
@@ -246,7 +245,7 @@ tutte adj =
                 List.foldl
                     next
                     (tutteInitial f adj)
-                    (List.range 1 10)
+                    (List.range 1 20)
 
             Nothing ->
                 Array.empty
