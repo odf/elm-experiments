@@ -134,7 +134,7 @@ tailFrom a aList =
 
         x :: rest ->
             if x == a then
-                a :: rest
+                aList
             else
                 tailFrom a rest
 
