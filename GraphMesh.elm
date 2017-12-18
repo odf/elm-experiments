@@ -119,7 +119,7 @@ dodecahedron =
 
 mesh : WebGL.Mesh Renderer.Vertex
 mesh =
-    WebGL.lines <| lines (embed tutte cube)
+    WebGL.lines <| lines (embed tutte dodecahedron)
 
 
 
@@ -128,30 +128,44 @@ mesh =
 
 nextCyclic : Int -> List Int -> Maybe Int
 nextCyclic v vs =
-    case vs of
-        v :: w :: rest ->
-            Just w
+    let
+        step rest =
+            case rest of
+                a :: b :: rest ->
+                    if a == v then
+                        Just b
+                    else
+                        step (b :: rest)
 
-        v :: [] ->
-            List.head vs
+                a :: [] ->
+                    if a == v then
+                        List.head vs
+                    else
+                        Nothing
 
-        [] ->
-            Nothing
+                [] ->
+                    Nothing
+    in
+        step vs
 
 
 face : Int -> Int -> Adjacencies -> Maybe (List Int)
 face v0 w0 adj =
     let
-        next u v vs =
-            if u == v0 then
-                Just (u :: vs)
-            else
-                step u v (u :: vs)
+        step v w rest =
+            let
+                u =
+                    Maybe.andThen (nextCyclic w) (Array.get v adj)
+            in
+                case u of
+                    Nothing ->
+                        Nothing
 
-        step v w vs =
-            Array.get v adj
-                |> Maybe.andThen (\nbs -> nextCyclic w nbs)
-                |> Maybe.andThen (\u -> next u v vs)
+                    Just u ->
+                        if u == v0 || List.length rest > Array.length adj then
+                            Just (w :: rest)
+                        else
+                            step u v (w :: rest)
     in
         step v0 w0 []
 
