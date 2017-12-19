@@ -4,6 +4,9 @@ import Array exposing (Array)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 
 
+-- Data types
+
+
 type alias Adjacencies =
     Array (List Int)
 
@@ -14,6 +17,18 @@ type alias Embedding =
 
 type alias Embedder =
     Adjacencies -> Embedding
+
+
+type alias Placer =
+    Embedding -> Adjacencies -> Int -> Vec3
+
+
+type alias Cooler =
+    Int -> Int -> Float
+
+
+
+-- List and array manipulation helpers
 
 
 tailFrom : a -> List a -> List a
@@ -42,6 +57,15 @@ nextCyclic a aList =
             Just b
 
 
+amap2 : (a -> b -> c) -> Array a -> Array b -> Array c
+amap2 fn xs ys =
+    Array.fromList (List.map2 fn (Array.toList xs) (Array.toList ys))
+
+
+
+-- Graph manipulation helpers
+
+
 face : Int -> Int -> Adjacencies -> Maybe (List Int)
 face v0 w0 adj =
     let
@@ -66,6 +90,15 @@ firstFace adj =
         |> Maybe.andThen (\w -> face 0 w adj)
 
 
+
+-- Geometry helpers
+
+
+center : List Vec3 -> Vec3
+center points =
+    Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
+
+
 nGon : Int -> List Vec3
 nGon n =
     let
@@ -78,8 +111,12 @@ nGon n =
         List.map corner (List.range 0 (n - 1))
 
 
-tutteInitial : List Int -> Adjacencies -> Embedding
-tutteInitial outer adj =
+
+-- Generic embedding code
+
+
+initialEmbedding : List Int -> Adjacencies -> Embedding
+initialEmbedding outer adj =
     let
         setValue ( idx, val ) a =
             Array.set idx val a
@@ -99,14 +136,67 @@ tutteInitial outer adj =
         List.foldl setValue init specs
 
 
-center : List Vec3 -> Vec3
-center points =
-    Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
+iterate :
+    Placer
+    -> Int
+    -> Float
+    -> Cooler
+    -> Embedding
+    -> Adjacencies
+    -> Embedding
+iterate placer nrSteps limit cooler positions adj =
+    let
+        n =
+            Array.length adj
+
+        verts =
+            Array.fromList <| List.range 0 (n - 1)
+
+        step i pos =
+            let
+                temperature =
+                    cooler i nrSteps
+
+                newPos =
+                    Array.map (placer pos adj) verts
+            in
+                newPos
+    in
+        List.foldl step positions (List.range 1 nrSteps)
 
 
-amap2 : (a -> b -> c) -> Array a -> Array b -> Array c
-amap2 fn xs ys =
-    Array.fromList (List.map2 fn (Array.toList xs) (Array.toList ys))
+getPos : Embedding -> Int -> Vec3
+getPos pos v =
+    Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
+
+
+fastCooler : Cooler
+fastCooler step maxStep =
+    0.1 * (1.0 - (toFloat step) / (toFloat maxStep))
+
+
+slowCooler : Cooler
+slowCooler step maxStep =
+    0.04 * (1.0 - (toFloat step) / (toFloat maxStep)) ^ 3
+
+
+
+-- Specific embedding code
+
+
+tuttePlacer : Placer
+tuttePlacer pos adj v =
+    let
+        p =
+            getPos pos v
+
+        vs =
+            Maybe.withDefault [] (Array.get v adj)
+
+        moved p q =
+            center [ p, center [ p, q ] ]
+    in
+        center (List.map (\w -> moved p (getPos pos w)) vs)
 
 
 tutteStep : Embedding -> Adjacencies -> Embedding
@@ -134,7 +224,7 @@ tutte adj =
             Just f ->
                 List.foldl
                     next
-                    (tutteInitial f adj)
+                    (initialEmbedding f adj)
                     (List.range 1 20)
 
             Nothing ->
