@@ -111,29 +111,24 @@ nGon n =
         List.map corner (List.range 0 (n - 1))
 
 
+limitDistance : Float -> Vec3 -> Vec3 -> Vec3
+limitDistance t vNew vOld =
+    let
+        d =
+            Vec3.distanceSquared vNew vOld
+    in
+        if d > t then
+            Vec3.add vOld (Vec3.scale (t / d) (Vec3.sub vNew vOld))
+        else
+            vNew
+
 
 -- Generic embedding code
 
 
-initialEmbedding : List Int -> Adjacencies -> Embedding
-initialEmbedding outer adj =
-    let
-        setValue ( idx, val ) a =
-            Array.set idx val a
-
-        init =
-            (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
-
-        alpha =
-            pi / 16
-
-        shifted v =
-            Vec3.sub (Vec3.scale (sin alpha) v) (vec3 0 0 (cos alpha))
-
-        specs =
-            List.map2 (,) outer (List.map shifted (nGon (List.length outer)))
-    in
-        List.foldl setValue init specs
+getPos : Embedding -> Int -> Vec3
+getPos pos v =
+    Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
 
 
 iterate :
@@ -157,17 +152,15 @@ iterate placer nrSteps limit cooler positions adj =
                 temperature =
                     cooler i nrSteps
 
+                update v =
+                    limitDistance temperature (placer pos adj v) (getPos pos v)
+
                 newPos =
-                    Array.map (placer pos adj) verts
+                    Array.map update verts
             in
                 newPos
     in
         List.foldl step positions (List.range 1 nrSteps)
-
-
-getPos : Embedding -> Int -> Vec3
-getPos pos v =
-    Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
 
 
 fastCooler : Cooler
@@ -179,6 +172,48 @@ slowCooler : Cooler
 slowCooler step maxStep =
     0.04 * (1.0 - (toFloat step) / (toFloat maxStep)) ^ 3
 
+
+simpleEmbedding : List Int -> Adjacencies -> Embedding
+simpleEmbedding outer adj =
+    let
+        setValue ( idx, val ) a =
+            Array.set idx val a
+
+        init =
+            (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
+
+        alpha =
+            pi / 16
+
+        shifted v =
+            Vec3.sub (Vec3.scale (sin alpha) v) (vec3 0 0 (cos alpha))
+
+        specs =
+            List.map2 (,) outer (List.map shifted (nGon (List.length outer)))
+    in
+        List.foldl setValue init specs
+
+
+init : Adjacencies -> Embedding
+init adj =
+    case firstFace adj of
+        Nothing ->
+            Array.map (\_ -> (vec3 0 0 0)) adj
+
+        Just f ->
+            simpleEmbedding f adj
+
+
+embed :
+    Embedder
+    -> Placer
+    -> Int
+    -> Float
+    -> Cooler
+    -> Adjacencies
+    -> Embedding
+embed init placer nrSteps limit cooler adj =
+    iterate placer nrSteps limit cooler (init adj) adj
 
 
 -- Specific embedding code
@@ -201,13 +236,4 @@ tuttePlacer pos adj v =
 
 tutte : Adjacencies -> Embedding
 tutte adj =
-    let
-        go pos0 =
-            iterate tuttePlacer 10 1e-4 fastCooler pos0 adj
-    in
-        case firstFace adj of
-            Nothing ->
-                Array.empty
-
-            Just f ->
-                go <| initialEmbedding f adj
+    embed init tuttePlacer 20 1e-4 fastCooler adj
