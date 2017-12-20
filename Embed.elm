@@ -164,7 +164,8 @@ sphericalNormalizer : Embedding -> Embedding
 sphericalNormalizer pos =
     let
         center =
-            List.foldl Vec3.add (vec3 0 0 0) (Array.toList pos)
+            Vec3.scale (1 / (toFloat <| Array.length pos)) <|
+                List.foldl Vec3.add (vec3 0 0 0) (Array.toList pos)
     in
         Array.map (\p -> Vec3.normalize (Vec3.sub p center)) pos
 
@@ -252,7 +253,7 @@ sphericalPlacer pos adj v =
 
 spherical : Adjacencies -> Embedding
 spherical adj =
-    embed init sphericalPlacer 1 1.0e-4 (cooler 1 0) adj
+    embed init sphericalPlacer 50 1.0e-4 (cooler 0.1 1) adj
 
 
 default : Embedder
