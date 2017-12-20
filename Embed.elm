@@ -228,7 +228,13 @@ sphericalPlacer pos adj v =
                 Vec3.scale d q
 
         normalizedSum points =
-            Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
+            let
+                s = List.foldl Vec3.add (vec3 0 0 0) points
+            in
+                if (Vec3.length s) < 1e-8 then
+                    s
+                else
+                    Vec3.normalize s
 
     in
         normalizedSum (List.map weightedPos (getNeighbors v adj))
@@ -236,7 +242,7 @@ sphericalPlacer pos adj v =
 
 spherical : Adjacencies -> Embedding
 spherical adj =
-    embed init sphericalPlacer 100 1e-4 fastCooler adj
+    embed init sphericalPlacer 500 1e-4 fastCooler adj
 
 
 default : Embedder
