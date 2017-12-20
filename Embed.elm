@@ -199,33 +199,15 @@ tuttePlacer pos adj v =
         center (List.map (\w -> moved p (getPos pos w)) vs)
 
 
-tutteStep : Embedding -> Adjacencies -> Embedding
-tutteStep pos adj =
-    let
-        getPos v =
-            Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
-
-        moved p q =
-            center [ p, center [ p, q ] ]
-
-        newPos ( p, vs ) =
-            center (List.map (\v -> moved p (getPos v)) vs)
-    in
-        Array.map newPos (amap2 (,) pos adj)
-
-
 tutte : Adjacencies -> Embedding
 tutte adj =
     let
-        next _ positions =
-            tutteStep positions adj
+        go pos0 =
+            iterate tuttePlacer 10 1e-4 fastCooler pos0 adj
     in
         case firstFace adj of
-            Just f ->
-                List.foldl
-                    next
-                    (initialEmbedding f adj)
-                    (List.range 1 20)
-
             Nothing ->
                 Array.empty
+
+            Just f ->
+                go <| initialEmbedding f adj
