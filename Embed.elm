@@ -90,6 +90,7 @@ getNeighbors v adj =
     Maybe.withDefault [] (Array.get v adj)
 
 
+
 -- Geometry helpers
 
 
@@ -117,6 +118,7 @@ limitDistance t vNew vOld =
             vNew
 
 
+
 -- Generic embedding code
 
 
@@ -127,13 +129,14 @@ getPos v pos =
 
 iterate :
     Placer
+    -> (Embedding -> Embedding)
     -> Int
     -> Float
     -> Cooler
     -> Embedding
     -> Adjacencies
     -> Embedding
-iterate placer nrSteps limit cooler positions adj =
+iterate place normalize nrSteps limit cooler positions adj =
     let
         n =
             Array.length adj
@@ -147,24 +150,28 @@ iterate placer nrSteps limit cooler positions adj =
                     cooler i nrSteps
 
                 update v =
-                    limitDistance temperature (placer pos adj v) (getPos v pos)
+                    limitDistance temperature (place pos adj v) (getPos v pos)
 
                 newPos =
                     Array.map update verts
             in
-                newPos
+                normalize newPos
     in
         List.foldl step positions (List.range 1 nrSteps)
 
 
-fastCooler : Cooler
-fastCooler step maxStep =
-    0.1 * (1.0 - (toFloat step) / (toFloat maxStep))
+sphericalNormalizer : Embedding -> Embedding
+sphericalNormalizer pos =
+    let
+        center =
+            List.foldl Vec3.add (vec3 0 0 0) (Array.toList pos)
+    in
+        Array.map (\p -> Vec3.normalize (Vec3.sub p center)) pos
 
 
-slowCooler : Cooler
-slowCooler step maxStep =
-    0.04 * (1.0 - (toFloat step) / (toFloat maxStep)) ^ 3
+cooler : Float -> Float -> Cooler
+cooler factor exponent step maxStep =
+    factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
 
 
 simpleEmbedding : List Int -> Adjacencies -> Embedding
@@ -177,7 +184,7 @@ simpleEmbedding outer adj =
             (Array.initialize (Array.length adj) (\_ -> vec3 0 0 1))
 
         alpha =
-            pi / 16
+            pi / 3
 
         shifted v =
             Vec3.sub (Vec3.scale (sin alpha) v) (vec3 0 0 (cos alpha))
@@ -207,7 +214,8 @@ embed :
     -> Adjacencies
     -> Embedding
 embed init placer nrSteps limit cooler adj =
-    iterate placer nrSteps limit cooler (init adj) adj
+    iterate placer sphericalNormalizer nrSteps limit cooler (init adj) adj
+
 
 
 -- Specific embedding code
@@ -221,29 +229,32 @@ sphericalPlacer pos adj v =
 
         weightedPos w =
             let
-                q = getPos w pos
+                q =
+                    getPos w pos
 
-                d = Vec3.distanceSquared p q
+                d =
+                    Vec3.distanceSquared p q
             in
                 Vec3.scale d q
 
         normalizedSum points =
             let
-                s = List.foldl Vec3.add (vec3 0 0 0) points
+                s =
+                    List.foldl Vec3.add (vec3 0 0 0) points
             in
-                if (Vec3.length s) < 1e-8 then
-                    s
+                if (Vec3.length s) < 1.0e-8 then
+                    Vec3.normalize p
                 else
                     Vec3.normalize s
-
     in
         normalizedSum (List.map weightedPos (getNeighbors v adj))
 
 
 spherical : Adjacencies -> Embedding
 spherical adj =
-    embed init sphericalPlacer 500 1e-4 fastCooler adj
+    embed init sphericalPlacer 1 1.0e-4 (cooler 1 0) adj
 
 
 default : Embedder
-default = spherical
+default =
+    spherical
