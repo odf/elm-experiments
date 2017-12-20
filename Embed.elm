@@ -1,4 +1,4 @@
-module Embed exposing (Adjacencies, Embedding, Embedder, tutte)
+module Embed exposing (Adjacencies, Embedding, Embedder, default)
 
 import Array exposing (Array)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -57,11 +57,6 @@ nextCyclic a aList =
             Just b
 
 
-amap2 : (a -> b -> c) -> Array a -> Array b -> Array c
-amap2 fn xs ys =
-    Array.fromList (List.map2 fn (Array.toList xs) (Array.toList ys))
-
-
 
 -- Graph manipulation helpers
 
@@ -90,13 +85,12 @@ firstFace adj =
         |> Maybe.andThen (\w -> face 0 w adj)
 
 
+getNeighbors : Int -> Adjacencies -> List Int
+getNeighbors v adj =
+    Maybe.withDefault [] (Array.get v adj)
+
 
 -- Geometry helpers
-
-
-center : List Vec3 -> Vec3
-center points =
-    Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
 
 
 nGon : Int -> List Vec3
@@ -126,8 +120,8 @@ limitDistance t vNew vOld =
 -- Generic embedding code
 
 
-getPos : Embedding -> Int -> Vec3
-getPos pos v =
+getPos : Int -> Embedding -> Vec3
+getPos v pos =
     Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
 
 
@@ -153,7 +147,7 @@ iterate placer nrSteps limit cooler positions adj =
                     cooler i nrSteps
 
                 update v =
-                    limitDistance temperature (placer pos adj v) (getPos pos v)
+                    limitDistance temperature (placer pos adj v) (getPos v pos)
 
                 newPos =
                     Array.map update verts
@@ -219,21 +213,31 @@ embed init placer nrSteps limit cooler adj =
 -- Specific embedding code
 
 
-tuttePlacer : Placer
-tuttePlacer pos adj v =
+sphericalPlacer : Placer
+sphericalPlacer pos adj v =
     let
         p =
-            getPos pos v
+            getPos v pos
 
-        vs =
-            Maybe.withDefault [] (Array.get v adj)
+        weightedPos w =
+            let
+                q = getPos w pos
 
-        moved p q =
-            center [ p, center [ p, q ] ]
+                d = Vec3.distanceSquared p q
+            in
+                Vec3.scale d q
+
+        normalizedSum points =
+            Vec3.normalize (List.foldl Vec3.add (vec3 0 0 0) points)
+
     in
-        center (List.map (\w -> moved p (getPos pos w)) vs)
+        normalizedSum (List.map weightedPos (getNeighbors v adj))
 
 
-tutte : Adjacencies -> Embedding
-tutte adj =
-    embed init tuttePlacer 20 1e-4 fastCooler adj
+spherical : Adjacencies -> Embedding
+spherical adj =
+    embed init sphericalPlacer 100 1e-4 fastCooler adj
+
+
+default : Embedder
+default = spherical

@@ -102,4 +102,4 @@ dodecahedron =
 
 mesh : WebGL.Mesh Renderer.Vertex
 mesh =
-    WebGL.lines <| lines (embed Embed.tutte dodecahedron)
+    WebGL.lines <| lines (embed Embed.default dodecahedron)
