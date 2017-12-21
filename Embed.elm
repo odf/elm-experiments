@@ -23,6 +23,10 @@ type alias Placer =
     Embedding -> Adjacencies -> Int -> Vec3
 
 
+type alias Normalizer =
+    Embedding -> Embedding
+
+
 type alias Cooler =
     Int -> Int -> Float
 
@@ -129,14 +133,14 @@ getPos v pos =
 
 iterate :
     Placer
-    -> (Embedding -> Embedding)
+    -> Normalizer
     -> Int
     -> Float
     -> Cooler
     -> Embedding
     -> Adjacencies
     -> Embedding
-iterate place normalize nrSteps limit cooler positions adj =
+iterate place normalize nrSteps limit cool positions adj =
     let
         n =
             Array.length adj
@@ -147,17 +151,27 @@ iterate place normalize nrSteps limit cooler positions adj =
         step i pos =
             let
                 temperature =
-                    cooler i nrSteps
+                    cool i nrSteps
 
                 update v =
                     limitDistance temperature (place pos adj v) (getPos v pos)
-
-                newPos =
-                    Array.map update verts
             in
-                normalize newPos
+                normalize <| Array.map update verts
     in
         List.foldl step positions (List.range 1 nrSteps)
+
+
+embed :
+    Embedder
+    -> Placer
+    -> Normalizer
+    -> Int
+    -> Float
+    -> Cooler
+    -> Adjacencies
+    -> Embedding
+embed init placer normalizer nrSteps limit cooler adj =
+    iterate placer normalizer nrSteps limit cooler (init adj) adj
 
 
 sphericalNormalizer : Embedding -> Embedding
@@ -170,8 +184,8 @@ sphericalNormalizer pos =
         Array.map (\p -> Vec3.normalize (Vec3.sub p center)) pos
 
 
-cooler : Float -> Float -> Cooler
-cooler factor exponent step maxStep =
+genericCooler : Float -> Float -> Cooler
+genericCooler factor exponent step maxStep =
     factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
 
 
@@ -204,18 +218,6 @@ init adj =
 
         Just f ->
             simpleEmbedding f adj
-
-
-embed :
-    Embedder
-    -> Placer
-    -> Int
-    -> Float
-    -> Cooler
-    -> Adjacencies
-    -> Embedding
-embed init placer nrSteps limit cooler adj =
-    iterate placer sphericalNormalizer nrSteps limit cooler (init adj) adj
 
 
 
@@ -253,7 +255,11 @@ sphericalPlacer pos adj v =
 
 spherical : Adjacencies -> Embedding
 spherical adj =
-    embed init sphericalPlacer 50 1.0e-4 (cooler 0.1 1) adj
+    let
+        cooler =
+            genericCooler 0.1 3
+    in
+        embed init sphericalPlacer sphericalNormalizer 50 1.0e-4 cooler adj
 
 
 default : Embedder
