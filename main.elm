@@ -8,6 +8,7 @@ import Task
 import WebGL
 import Window
 import GraphMesh
+import Embed
 import Camera
 import Renderer
 
@@ -30,7 +31,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
-      , mesh = GraphMesh.mesh
+      , mesh = GraphMesh.mesh Embed.default GraphMesh.dodecahedron
       , material = initMaterial
       }
     , Task.perform ResizeMsg Window.size

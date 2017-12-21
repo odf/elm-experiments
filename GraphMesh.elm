@@ -1,23 +1,10 @@
-module GraphMesh exposing (mesh)
+module GraphMesh exposing (mesh, cube, dodecahedron)
 
 import Array exposing (Array)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import WebGL
 import Embed
 import Renderer exposing (Vertex)
-
-
-type alias Graph =
-    { adjacencies : Embed.Adjacencies
-    , positions : Maybe Embed.Embedding
-    }
-
-
-makeGraph : List (List Int) -> Graph
-makeGraph adj =
-    { adjacencies = Array.fromList adj
-    , positions = Nothing
-    }
 
 
 vertex : Vec3 -> Renderer.Vertex
@@ -28,37 +15,33 @@ vertex pos =
     }
 
 
-lines : Graph -> List ( Vertex, Vertex )
-lines graph =
+lines : Embed.Embedder -> Embed.Adjacencies -> List ( Vertex, Vertex )
+lines embedder adj =
     let
-        positions =
-            Maybe.withDefault Array.empty graph.positions
+        pos =
+            embedder adj
 
-        edge p1 p2 =
-            ( (vertex p1), (vertex p2) )
-
-        getPos v =
-            Array.get v positions
+        makeVertex v =
+            vertex <| Maybe.withDefault (vec3 0 0 0) <| Array.get v pos
 
         edges ( v, adj ) =
-            List.filterMap (\w -> Maybe.map2 edge (getPos v) (getPos w)) adj
+            List.map (\w -> ( (makeVertex v), (makeVertex w) )) adj
     in
-        List.concat <|
-            List.map edges (Array.toIndexedList graph.adjacencies)
+        List.concat <| List.map edges <| Array.toIndexedList adj
 
 
-embed : Embed.Embedder -> Graph -> Graph
-embed embedder graph =
-    { graph | positions = Just (embedder graph.adjacencies) }
+mesh : Embed.Embedder -> Embed.Adjacencies -> WebGL.Mesh Renderer.Vertex
+mesh embedder =
+    WebGL.lines << lines embedder
 
 
 
 -- Some example graphs
 
 
-cube : Graph
+cube : Embed.Adjacencies
 cube =
-    makeGraph
+    Array.fromList
         [ [ 4, 3, 1 ]
         , [ 5, 0, 2 ]
         , [ 6, 1, 3 ]
@@ -70,9 +53,9 @@ cube =
         ]
 
 
-dodecahedron : Graph
+dodecahedron : Embed.Adjacencies
 dodecahedron =
-    makeGraph
+    Array.fromList
         [ [ 1, 5, 4 ]
         , [ 2, 6, 0 ]
         , [ 3, 7, 1 ]
@@ -94,12 +77,3 @@ dodecahedron =
         , [ 12, 17, 19 ]
         , [ 11, 18, 15 ]
         ]
-
-
-
--- Using a fixed example graph for now
-
-
-mesh : WebGL.Mesh Renderer.Vertex
-mesh =
-    WebGL.lines <| lines (embed Embed.default dodecahedron)
