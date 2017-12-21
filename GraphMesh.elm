@@ -1,38 +1,28 @@
 module GraphMesh exposing (mesh, cube, dodecahedron)
 
-import Array exposing (Array)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Math.Vector3 exposing (vec3)
 import WebGL
 import Embed
-import Renderer exposing (Vertex)
+import Renderer
 
 
-vertex : Vec3 -> Renderer.Vertex
-vertex pos =
-    { color = (vec3 1 1 1)
-    , pos = pos
-    , normal = pos
-    }
-
-
-lines : Embed.Embedder -> Embed.Adjacencies -> List ( Vertex, Vertex )
-lines embedder adj =
+mesh : Embed.Embedder -> Embed.Adjacencies -> WebGL.Mesh Renderer.Vertex
+mesh embedder adj =
     let
         pos =
             embedder adj
 
-        makeVertex v =
-            vertex <| Maybe.withDefault (vec3 0 0 0) <| Array.get v pos
+        meshVertex v =
+            let
+                p =
+                    Embed.getPos v pos
+            in
+                { color = (vec3 1 1 1), pos = p, normal = p }
 
-        edges ( v, adj ) =
-            List.map (\w -> ( (makeVertex v), (makeVertex w) )) adj
+        meshEdge ( v, w ) =
+            ( meshVertex v, meshVertex w )
     in
-        List.concat <| List.map edges <| Array.toIndexedList adj
-
-
-mesh : Embed.Embedder -> Embed.Adjacencies -> WebGL.Mesh Renderer.Vertex
-mesh embedder =
-    WebGL.lines << lines embedder
+        WebGL.lines <| List.map meshEdge <| Embed.edges adj
 
 
 
@@ -41,7 +31,7 @@ mesh embedder =
 
 cube : Embed.Adjacencies
 cube =
-    Array.fromList
+    Embed.adjacencies
         [ [ 4, 3, 1 ]
         , [ 5, 0, 2 ]
         , [ 6, 1, 3 ]
@@ -55,7 +45,7 @@ cube =
 
 dodecahedron : Embed.Adjacencies
 dodecahedron =
-    Array.fromList
+    Embed.adjacencies
         [ [ 1, 5, 4 ]
         , [ 2, 6, 0 ]
         , [ 3, 7, 1 ]

@@ -1,4 +1,14 @@
-module Embed exposing (Adjacencies, Embedding, Embedder, default)
+module Embed
+    exposing
+        ( Adjacencies
+        , Embedding
+        , Embedder
+        , adjacencies
+        , getNeighbors
+        , getPos
+        , edges
+        , default
+        )
 
 import Array exposing (Array)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -32,7 +42,7 @@ type alias Cooler =
 
 
 
--- List and array manipulation helpers
+-- List and array helpers
 
 
 tailFrom : a -> List a -> List a
@@ -62,14 +72,24 @@ nextCyclic a aList =
 
 
 
--- Graph manipulation helpers
+-- Graph helpers
+
+
+adjacencies : List (List Int) -> Adjacencies
+adjacencies =
+    Array.fromList
+
+
+getNeighbors : Int -> Adjacencies -> List Int
+getNeighbors v adj =
+    Maybe.withDefault [] (Array.get v adj)
 
 
 face : Int -> Int -> Adjacencies -> Maybe (List Int)
 face v0 w0 adj =
     let
         step v w rest =
-            case Maybe.andThen (nextCyclic w) (Array.get v adj) of
+            case nextCyclic w <| getNeighbors v adj of
                 Nothing ->
                     Nothing
 
@@ -84,14 +104,17 @@ face v0 w0 adj =
 
 firstFace : Adjacencies -> Maybe (List Int)
 firstFace adj =
-    Array.get 0 adj
-        |> Maybe.andThen (\vs -> List.head vs)
+    List.head (getNeighbors 0 adj)
         |> Maybe.andThen (\w -> face 0 w adj)
 
 
-getNeighbors : Int -> Adjacencies -> List Int
-getNeighbors v adj =
-    Maybe.withDefault [] (Array.get v adj)
+edges : Adjacencies -> List ( Int, Int )
+edges adj =
+    let
+        incident ( v, nbs ) =
+            List.map (\w -> ( v, w )) nbs
+    in
+        List.concat <| List.map incident <| Array.toIndexedList adj
 
 
 
