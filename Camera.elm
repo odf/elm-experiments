@@ -8,6 +8,7 @@ module Camera
         , view
         , perspectiveMatrix
         , viewingMatrix
+        , cameraDistance
         )
 
 import AnimationFrame
@@ -41,7 +42,7 @@ type alias Modifiers =
     }
 
 
-type alias Model =
+type alias ModelData =
     { size : Size
     , origin : Position
     , cameraDistance : Float
@@ -54,6 +55,10 @@ type alias Model =
     , moved : Bool
     , modifiers : Modifiers
     }
+
+
+type Model
+    = Model ModelData
 
 
 type Msg
@@ -70,59 +75,62 @@ type Msg
 
 initialModel : Model
 initialModel =
-    { size = { width = 0, height = 0 }
-    , origin = { x = 0, y = 0 }
-    , cameraDistance = 5
-    , fieldOfView = 45
-    , dragging = False
-    , ndcPos = { x = 0, y = 0 }
-    , rotation = Mat4.identity
-    , deltaRot = Mat4.identity
-    , moved = False
-    , modifiers = { shift = False, ctrl = False }
-    , shift = vec3 0 0 0
-    }
+    Model
+        { size = { width = 0, height = 0 }
+        , origin = { x = 0, y = 0 }
+        , cameraDistance = 5
+        , fieldOfView = 45
+        , dragging = False
+        , ndcPos = { x = 0, y = 0 }
+        , rotation = Mat4.identity
+        , deltaRot = Mat4.identity
+        , moved = False
+        , modifiers = { shift = False, ctrl = False }
+        , shift = vec3 0 0 0
+        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg (Model model) =
     case msg of
         FrameMsg time ->
-            frameUpdate time model
+            frameUpdate time (Model model)
 
         ResizeMsg size ->
-            { model | size = size } ! []
+            Model { model | size = size } ! []
 
         LookAtMsg axis up ->
             let
                 rotation =
                     Mat4.makeLookAt (vec3 0 0 0) axis up
             in
-                { model | rotation = rotation } ! []
+                Model { model | rotation = rotation } ! []
 
         MouseMoveMsg pos ->
-            mouseMoveUpdate pos model
+            mouseMoveUpdate pos (Model model)
 
         MouseDownMsg ->
-            { model | dragging = True, deltaRot = Mat4.identity } ! []
+            Model { model | dragging = True, deltaRot = Mat4.identity } ! []
 
         MouseUpMsg pos ->
-            { model | dragging = False } ! []
+            Model { model | dragging = False } ! []
 
         KeyUpMsg keyCode ->
-            { model
-                | modifiers = updateModifiers keyCode False model.modifiers
-            }
+            Model
+                { model
+                    | modifiers = updateModifiers keyCode False model.modifiers
+                }
                 ! []
 
         KeyDownMsg keyCode ->
-            { model
-                | modifiers = updateModifiers keyCode True model.modifiers
-            }
+            Model
+                { model
+                    | modifiers = updateModifiers keyCode True model.modifiers
+                }
                 ! []
 
         WheelMsg value ->
-            wheelUpdate value model
+            wheelUpdate value (Model model)
 
 
 subscriptions : Model -> Sub Msg
@@ -137,7 +145,7 @@ subscriptions _ =
 
 
 view : List WebGL.Entity -> Model -> Html Msg
-view entities model =
+view entities (Model model) =
     WebGL.toHtml
         [ width (round model.size.width)
         , height (round model.size.height)
@@ -159,22 +167,22 @@ updateModifiers keyCode value oldMods =
 
 
 frameUpdate : Float -> Model -> ( Model, Cmd Msg )
-frameUpdate float model =
+frameUpdate float (Model model) =
     if model.dragging then
         if model.moved then
-            { model | moved = False } ! []
+            Model { model | moved = False } ! []
         else
-            { model | deltaRot = Mat4.identity } ! []
+            Model { model | deltaRot = Mat4.identity } ! []
     else
         let
             rotation =
                 orthonormalized <| Mat4.mul model.deltaRot model.rotation
         in
-            { model | rotation = rotation } ! []
+            Model { model | rotation = rotation } ! []
 
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
-mouseMoveUpdate pos model =
+mouseMoveUpdate pos (Model model) =
     let
         xRelative =
             ((toFloat pos.x) - model.origin.x) / model.size.width
@@ -187,15 +195,15 @@ mouseMoveUpdate pos model =
     in
         if model.dragging then
             if model.modifiers.shift then
-                panMouse ndcPos model
+                panMouse ndcPos (Model model)
             else
-                rotateMouse ndcPos model
+                rotateMouse ndcPos (Model model)
         else
-            { model | ndcPos = ndcPos } ! []
+            Model { model | ndcPos = ndcPos } ! []
 
 
 wheelUpdate : Float -> Model -> ( Model, Cmd Msg )
-wheelUpdate value model =
+wheelUpdate value (Model model) =
     let
         factor =
             if value > 0 then
@@ -211,11 +219,11 @@ wheelUpdate value model =
             else
                 { model | cameraDistance = factor * model.cameraDistance }
     in
-        newModel ! []
+        Model newModel ! []
 
 
 panMouse : Position -> Model -> ( Model, Cmd Msg )
-panMouse ndcPosNew model =
+panMouse ndcPosNew (Model model) =
     let
         dx =
             ndcPosNew.x - model.ndcPos.x
@@ -229,16 +237,17 @@ panMouse ndcPosNew model =
         shift =
             Mat4.transform invRot <| vec3 dx dy 0
     in
-        { model
-            | ndcPos = ndcPosNew
-            , moved = dx /= 0 || dy /= 0
-            , shift = Vec3.add model.shift shift
-        }
+        Model
+            { model
+                | ndcPos = ndcPosNew
+                , moved = dx /= 0 || dy /= 0
+                , shift = Vec3.add model.shift shift
+            }
             ! []
 
 
 rotateMouse : Position -> Model -> ( Model, Cmd Msg )
-rotateMouse ndcPosNew model =
+rotateMouse ndcPosNew (Model model) =
     let
         ( axis, angle ) =
             rotationParameters ndcPosNew model.ndcPos
@@ -249,12 +258,13 @@ rotateMouse ndcPosNew model =
         rotation =
             orthonormalized <| Mat4.mul deltaRot model.rotation
     in
-        { model
-            | ndcPos = ndcPosNew
-            , deltaRot = deltaRot
-            , rotation = rotation
-            , moved = angle > 0
-        }
+        Model
+            { model
+                | ndcPos = ndcPosNew
+                , deltaRot = deltaRot
+                , rotation = rotation
+                , moved = angle > 0
+            }
             ! []
 
 
@@ -331,7 +341,7 @@ orthonormalized m =
 
 
 viewingMatrix : Model -> Mat4
-viewingMatrix model =
+viewingMatrix (Model model) =
     let
         camVector =
             vec3 0 0 model.cameraDistance
@@ -346,7 +356,7 @@ viewingMatrix model =
 
 
 perspectiveMatrix : Model -> Mat4
-perspectiveMatrix model =
+perspectiveMatrix (Model model) =
     let
         aspectRatio =
             model.size.width / model.size.height
@@ -361,3 +371,8 @@ perspectiveMatrix model =
                 atan (tan (degrees (fov / 2)) / aspectRatio) * 360 / pi
     in
         Mat4.makePerspective fovy aspectRatio 0.01 100
+
+
+cameraDistance : Model -> Float
+cameraDistance (Model model) =
+    model.cameraDistance
