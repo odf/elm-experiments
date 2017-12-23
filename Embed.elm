@@ -16,12 +16,12 @@ import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 -- Data types
 
 
-type alias Adjacencies =
-    Array (List Int)
+type Adjacencies
+    = Adjacencies (Array (List Int))
 
 
-type alias Embedding =
-    Array Vec3
+type Embedding
+    = Embedding (Array Vec3)
 
 
 type alias Embedder =
@@ -76,16 +76,21 @@ nextCyclic a aList =
 
 adjacencies : List (List Int) -> Adjacencies
 adjacencies =
-    Array.fromList
+    Adjacencies << Array.fromList
 
 
 neighbors : Int -> Adjacencies -> List Int
-neighbors v adj =
+neighbors v (Adjacencies adj) =
     Maybe.withDefault [] (Array.get v adj)
 
 
+nrVertices : Adjacencies -> Int
+nrVertices (Adjacencies adj) =
+    Array.length adj
+
+
 edges : Adjacencies -> List ( Int, Int )
-edges adj =
+edges (Adjacencies adj) =
     let
         incident ( v, nbs ) =
             List.map (\w -> ( v, w )) nbs
@@ -100,7 +105,7 @@ face : Int -> Int -> Adjacencies -> Maybe (List Int)
 face v0 w0 adj =
     let
         step v w m rest =
-            if m >= Array.length adj then
+            if m >= nrVertices adj then
                 Nothing
             else
                 case nextCyclic w (neighbors v adj) of
@@ -168,8 +173,13 @@ limitDisplacement limit vNew vOld =
 
 
 getPos : Int -> Embedding -> Vec3
-getPos v pos =
+getPos v (Embedding pos) =
     Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
+
+
+map : (Vec3 -> Vec3) -> Embedding -> Embedding
+map fn (Embedding pos) =
+    Embedding (Array.map fn pos)
 
 
 iterate :
@@ -184,7 +194,7 @@ iterate :
 iterate place normalize nrSteps limit temperature positions adj =
     let
         n =
-            Array.length adj
+            nrVertices adj
 
         verts =
             Array.fromList <| List.range 0 (n - 1)
@@ -197,7 +207,7 @@ iterate place normalize nrSteps limit temperature positions adj =
                         (place pos adj v)
                         (getPos v pos)
             in
-                normalize <| Array.map update verts
+                normalize <| Embedding <| Array.map update verts
     in
         List.foldl step positions (List.range 1 nrSteps)
 
@@ -216,12 +226,12 @@ embed init placer normalizer nrSteps limit cooler adj =
 
 
 sphericalNormalizer : Embedding -> Embedding
-sphericalNormalizer pos =
+sphericalNormalizer (Embedding pos) =
     let
         c =
             center (Array.toList pos)
     in
-        Array.map (\p -> Vec3.normalize (Vec3.sub p c)) pos
+        Embedding (Array.map (\p -> Vec3.normalize (Vec3.sub p c)) pos)
 
 
 genericCooler : Float -> Float -> Cooler
@@ -231,15 +241,17 @@ genericCooler factor exponent step maxStep =
 
 init : Adjacencies -> Embedding
 init adj =
-    case firstFace adj of
+    (case firstFace adj of
         Nothing ->
-            Array.map (\_ -> (vec3 0 0 0)) adj
+            Array.repeat (nrVertices adj) (vec3 0 0 0)
 
         Just outer ->
             List.foldl
                 (\( idx, val ) -> Array.set idx val)
-                (Array.map (\_ -> (vec3 0 0 1)) adj)
+                (Array.repeat (nrVertices adj) (vec3 0 0 1))
                 (List.map2 (,) outer (nGon (List.length outer)))
+    )
+        |> Embedding
 
 
 
