@@ -1,11 +1,11 @@
 module WheelEvent exposing (onMouseWheel)
 
-import Html exposing (Attribute)
-import Html.Events exposing (Options, onWithOptions)
+import Html
+import Html.Events
 import Json.Decode as Json
 
 
-onMouseWheel : (Float -> msg) -> Attribute msg
+onMouseWheel : (Float -> msg) -> Html.Attribute msg
 onMouseWheel tagger =
     let
         options =
@@ -14,4 +14,4 @@ onMouseWheel tagger =
         decoder =
             Json.at [ "deltaY" ] Json.float
     in
-        onWithOptions "wheel" options (Json.map tagger decoder)
+        Html.Events.onWithOptions "wheel" options (Json.map tagger decoder)

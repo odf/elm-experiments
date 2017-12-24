@@ -13,7 +13,7 @@ module Camera
 
 import AnimationFrame
 import Html exposing (Html)
-import Html.Attributes exposing (width, height, style)
+import Html.Attributes
 import Html.Events
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
@@ -147,9 +147,10 @@ subscriptions _ =
 view : List WebGL.Entity -> Model -> Html Msg
 view entities (Model model) =
     WebGL.toHtml
-        [ width (round model.size.width)
-        , height (round model.size.height)
-        , style [ ( "display", "block" ), ( "background", "black" ) ]
+        [ Html.Attributes.width (round model.size.width)
+        , Html.Attributes.height (round model.size.height)
+        , Html.Attributes.style
+            [ ( "display", "block" ), ( "background", "black" ) ]
         , Html.Events.onMouseDown MouseDownMsg
         , WheelEvent.onMouseWheel WheelMsg
         ]

@@ -2,7 +2,7 @@ module Renderer exposing (Vertex, Material, entity)
 
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import WebGL exposing (Mesh, Shader)
+import WebGL
 import Camera
 
 
@@ -54,7 +54,7 @@ scaleTo length vec =
     vec |> Vec3.normalize |> Vec3.scale length
 
 
-entity : Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
+entity : WebGL.Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
 entity mesh material model =
     let
         camDist =
@@ -80,7 +80,7 @@ entity mesh material model =
         WebGL.entity vertexShader fragmentShader mesh uniforms
 
 
-vertexShader : Shader Vertex Uniforms Varyings
+vertexShader : WebGL.Shader Vertex Uniforms Varyings
 vertexShader =
     [glsl|
 
@@ -103,7 +103,7 @@ vertexShader =
     |]
 
 
-fragmentShader : Shader {} Uniforms Varyings
+fragmentShader : WebGL.Shader {} Uniforms Varyings
 fragmentShader =
     [glsl|
 
