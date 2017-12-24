@@ -282,7 +282,7 @@ sphericalPlacer pos adj v =
 
 spherical : Adjacencies -> Embedding
 spherical =
-    embed init sphericalPlacer sphericalNormalizer 50 1.0e-4 <|
+    embed init sphericalPlacer sphericalNormalizer 500 1.0e-4 <|
         genericCooler 0.1 3
 
 
