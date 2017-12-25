@@ -6,7 +6,8 @@ module Embed
         , adjacencies
         , getPos
         , edges
-        , default
+        , spherical
+        , molecular
         )
 
 import Array exposing (Array)
@@ -212,19 +213,6 @@ iterate place normalize nrSteps limit temperature positions adj =
         List.foldl step positions (List.range 1 nrSteps)
 
 
-embed :
-    Embedder
-    -> Placer
-    -> Normalizer
-    -> Int
-    -> Float
-    -> Cooler
-    -> Adjacencies
-    -> Embedding
-embed init placer normalizer nrSteps limit cooler adj =
-    iterate placer normalizer nrSteps limit cooler (init adj) adj
-
-
 sphericalNormalizer : Embedding -> Embedding
 sphericalNormalizer (Embedding pos) =
     let
@@ -255,7 +243,7 @@ init adj =
 
 
 
--- Specific embedding code
+-- Specific vertex placers
 
 
 sphericalPlacer : Placer
@@ -280,12 +268,83 @@ sphericalPlacer pos adj v =
             Vec3.normalize s
 
 
-spherical : Adjacencies -> Embedding
-spherical =
-    embed init sphericalPlacer sphericalNormalizer 500 1.0e-4 <|
-        genericCooler 0.1 3
+centralRepulsionPlacer : Placer
+centralRepulsionPlacer pos adj v =
+    let
+        posV =
+            getPos v pos
+
+        wgtV =
+            1 / (Vec3.lengthSquared posV)
+
+        posNbs =
+            List.map (\w -> getPos w pos) <| neighbors v adj
+
+        wgtNbs =
+            List.map (Vec3.distanceSquared posV) posNbs
+
+        sumPos =
+            List.foldl
+                Vec3.add
+                (Vec3.scale wgtV posV)
+                (List.map2 Vec3.scale wgtNbs posNbs)
+
+        sumWgt =
+            List.foldl (+) wgtV wgtNbs
+    in
+        if sumWgt < 1.0e-8 then
+            posV
+        else
+            Vec3.scale (1 / sumWgt) sumPos
 
 
-default : Embedder
-default =
-    spherical
+
+-- Complete embedders
+
+
+spherical : Embedder
+spherical adj =
+    let
+        pass0 =
+            init adj
+
+        pass1 =
+            iterate
+                sphericalPlacer
+                sphericalNormalizer
+                500
+                1.0e-4
+                (genericCooler 0.1 3)
+                pass0
+                adj
+    in
+        pass1
+
+
+molecular : Embedder
+molecular adj =
+    let
+        pass0 =
+            init adj
+
+        pass1 =
+            iterate
+                sphericalPlacer
+                sphericalNormalizer
+                500
+                1.0e-4
+                (genericCooler 0.1 3)
+                pass0
+                adj
+
+        pass2 =
+            iterate
+                centralRepulsionPlacer
+                identity
+                500
+                1.0e-4
+                (genericCooler 0.1 3)
+                pass1
+                adj
+    in
+        pass2
