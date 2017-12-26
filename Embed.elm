@@ -267,8 +267,8 @@ genericCooler factor exponent step maxStep =
     factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
 
 
-init : Adjacencies -> Embedding
-init adj =
+initSimple : Embedder
+initSimple adj =
     (case firstFace adj of
         Nothing ->
             Array.repeat (nrVertices adj) (vec3 0 0 0)
@@ -280,6 +280,37 @@ init adj =
                 (List.map2 (,) outer (nGon (List.length outer)))
     )
         |> Embedding
+
+
+initSpherical : Embedder
+initSpherical adj =
+    let
+        layers =
+            verticesByDistance 0 adj
+
+        n =
+            List.length layers
+
+        ring i vs =
+            let
+                phi =
+                    pi * ((toFloat i) / (toFloat n) - 1)
+
+                shiftAndScale v =
+                    Vec3.add
+                        (Vec3.scale (sin phi) v)
+                        (vec3 0 0 (cos phi))
+            in
+                List.map2
+                    (,)
+                    vs
+                    (List.map shiftAndScale (nGon (List.length vs)))
+    in
+        List.foldl
+            (\( idx, val ) -> Array.set idx val)
+            (Array.repeat (nrVertices adj) (vec3 0 0 0))
+            (List.concat (List.indexedMap ring layers))
+            |> Embedding
 
 
 
@@ -400,7 +431,7 @@ localRepulsionPlacer pos adj v =
 
 spherical : Embedder
 spherical adj =
-    init adj
+    initSpherical adj
         |> iterate
             sphericalPlacer
             sphericalNormalizer
@@ -412,7 +443,7 @@ spherical adj =
 
 molecular : Embedder
 molecular adj =
-    init adj
+    initSpherical adj
         |> iterate
             sphericalPlacer
             sphericalNormalizer
