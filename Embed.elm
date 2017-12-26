@@ -11,6 +11,7 @@ module Embed
         )
 
 import Array exposing (Array)
+import Set
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 
 
@@ -71,6 +72,23 @@ nextCyclic a aList =
             Just b
 
 
+unique : List comparable -> List comparable
+unique aList =
+    let
+        step seen remaining out =
+            case remaining of
+                [] ->
+                    out
+
+                a :: rest ->
+                    if Set.member a seen then
+                        step seen rest out
+                    else
+                        step (Set.insert a seen) rest (a :: out)
+    in
+        step (Set.empty) (List.reverse aList) []
+
+
 
 -- Graph helpers
 
@@ -100,6 +118,28 @@ edges (Adjacencies adj) =
             List.concat <|
                 List.map incident <|
                     Array.toIndexedList adj
+
+
+verticesByDistance : Int -> Adjacencies -> List (List Int)
+verticesByDistance start adj =
+    let
+        step seen layers =
+            let
+                next =
+                    Maybe.withDefault [] (List.head layers)
+                        |> List.map (\v -> neighbors v adj)
+                        |> List.concat
+                        |> unique
+                        |> List.filter (\v -> not (Set.member v seen))
+            in
+                if List.isEmpty next then
+                    layers
+                else
+                    step
+                        (List.foldl Set.insert seen next)
+                        (next :: layers)
+    in
+        List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
 
 
 face : Int -> Int -> Adjacencies -> Maybe (List Int)
