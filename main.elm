@@ -31,7 +31,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
-      , mesh = GraphMesh.mesh Embed.molecular GraphMesh.fulleroidI_5_7a
+      , mesh = GraphMesh.mesh Embed.molecular GraphMesh.fulleroidI_5_12
       , material = initMaterial
       }
     , Task.perform ResizeMsg Window.size
