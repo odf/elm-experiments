@@ -46,6 +46,11 @@ type alias Cooler =
 -- List and array helpers
 
 
+sum : List number -> number
+sum =
+    List.foldl (+) 0
+
+
 tailFrom : a -> List a -> List a
 tailFrom a aList =
     case aList of
@@ -225,9 +230,6 @@ averageEdgeLength adj pos =
 
         edgeLength ( v, w ) =
             Vec3.distance (getPos v pos) (getPos w pos)
-
-        sum =
-            List.foldl (+) 0
     in
         sum (List.map edgeLength es) / (toFloat <| List.length es)
 
@@ -240,6 +242,21 @@ scaleBy factor =
 normalizeTo : Float -> Adjacencies -> Embedding -> Embedding
 normalizeTo len adj pos =
     scaleBy (len / averageEdgeLength adj pos) pos
+
+
+distance : Embedding -> Embedding -> Float
+distance pos1 pos2 =
+    let
+        n =
+            (\(Embedding p) -> Array.length p) pos1
+
+        distSquaredFor v =
+            Vec3.distanceSquared (getPos v pos1) (getPos v pos2)
+    in
+        List.range 0 (n - 1)
+            |> List.map distSquaredFor
+            |> sum
+            |> sqrt
 
 
 iterate :
@@ -265,10 +282,16 @@ iterate place nrSteps limit temperature adj positions =
                         (temperature i nrSteps)
                         (place pos adj v)
                         (getPos v pos)
+
+                next =
+                    Embedding <| Array.map update verts
             in
-                Embedding <| Array.map update verts
+                if i == nrSteps || distance pos next < limit then
+                    next
+                else
+                    step (i + 1) next
     in
-        List.foldl step positions (List.range 1 nrSteps)
+        step 1 positions
 
 
 genericCooler : Float -> Float -> Cooler
@@ -425,35 +448,30 @@ localRepulsionPlacer pos adj v =
 
 spherical : Embedder
 spherical adj =
-    initSpherical adj
-        |> iterate
-            sphericalPlacer
-            500
-            1.0e-4
-            (genericCooler 0.1 3)
-            adj
+    let
+        limit =
+            1.0e-2
+
+        cooler =
+            genericCooler 0.1 3
+    in
+        initSpherical adj
+            |> iterate sphericalPlacer 500 limit cooler adj
+            |> normalizeTo 1 adj
 
 
 molecular : Embedder
 molecular adj =
-    initSpherical adj
-        |> iterate
-            sphericalPlacer
-            500
-            1.0e-4
-            (genericCooler 0.1 3)
-            adj
-        |> normalizeTo 0.1 adj
-        |> iterate
-            centralRepulsionPlacer
-            500
-            1.0e-4
-            (genericCooler 0.1 3)
-            adj
-        |> normalizeTo 1 adj
-        |> iterate
-            localRepulsionPlacer
-            500
-            1.0e-4
-            (genericCooler 0.1 3)
-            adj
+    let
+        limit =
+            1.0e-2
+
+        cooler =
+            genericCooler 0.1 3
+    in
+        initSpherical adj
+            |> iterate sphericalPlacer 500 limit cooler adj
+            |> normalizeTo 0.1 adj
+            |> iterate centralRepulsionPlacer 500 limit cooler adj
+            |> normalizeTo 1 adj
+            |> iterate localRepulsionPlacer 0 limit cooler adj
