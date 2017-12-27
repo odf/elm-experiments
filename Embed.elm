@@ -162,12 +162,6 @@ face v0 w0 adj =
         step v0 w0 0 []
 
 
-firstFace : Adjacencies -> Maybe (List Int)
-firstFace adj =
-    List.head (neighbors 0 adj)
-        |> Maybe.andThen (\w -> face 0 w adj)
-
-
 
 -- Geometry helpers
 
@@ -225,14 +219,13 @@ map fn (Embedding pos) =
 
 iterate :
     Placer
-    -> Normalizer
     -> Int
     -> Float
     -> Cooler
     -> Adjacencies
     -> Embedding
     -> Embedding
-iterate place normalize nrSteps limit temperature adj positions =
+iterate place nrSteps limit temperature adj positions =
     let
         n =
             nrVertices adj
@@ -248,38 +241,14 @@ iterate place normalize nrSteps limit temperature adj positions =
                         (place pos adj v)
                         (getPos v pos)
             in
-                normalize <| Embedding <| Array.map update verts
+                Embedding <| Array.map update verts
     in
         List.foldl step positions (List.range 1 nrSteps)
-
-
-sphericalNormalizer : Embedding -> Embedding
-sphericalNormalizer (Embedding pos) =
-    let
-        c =
-            center (Array.toList pos)
-    in
-        Embedding (Array.map (\p -> Vec3.normalize (Vec3.sub p c)) pos)
 
 
 genericCooler : Float -> Float -> Cooler
 genericCooler factor exponent step maxStep =
     factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
-
-
-initSimple : Embedder
-initSimple adj =
-    (case firstFace adj of
-        Nothing ->
-            Array.repeat (nrVertices adj) (vec3 0 0 0)
-
-        Just outer ->
-            List.foldl
-                (\( idx, val ) -> Array.set idx val)
-                (Array.repeat (nrVertices adj) (vec3 0 0 1))
-                (List.map2 (,) outer (nGon (List.length outer)))
-    )
-        |> Embedding
 
 
 initSpherical : Embedder
@@ -380,7 +349,7 @@ pointsAndWeights pos adj v w =
         posV =
             getPos v pos
 
-        nbs =
+        nbsW =
             neighbors w adj
 
         pointAndWeight u =
@@ -396,8 +365,8 @@ pointsAndWeights pos adj v w =
                         ( posU, -0.5 / Vec3.distanceSquared posV posU )
     in
         [ ( getPos w pos, 1 )
-        , pointAndWeight <| nextCyclic v nbs
-        , pointAndWeight <| nextCyclic v <| List.reverse nbs
+        , pointAndWeight <| nextCyclic v nbsW
+        , pointAndWeight <| nextCyclic v <| List.reverse nbsW
         ]
 
 
@@ -434,7 +403,6 @@ spherical adj =
     initSpherical adj
         |> iterate
             sphericalPlacer
-            sphericalNormalizer
             500
             1.0e-4
             (genericCooler 0.1 3)
@@ -446,21 +414,18 @@ molecular adj =
     initSpherical adj
         |> iterate
             sphericalPlacer
-            sphericalNormalizer
             500
             1.0e-4
             (genericCooler 0.1 3)
             adj
         |> iterate
             centralRepulsionPlacer
-            identity
             500
             1.0e-4
             (genericCooler 0.1 3)
             adj
         |> iterate
             localRepulsionPlacer
-            identity
             500
             1.0e-4
             (genericCooler 0.1 3)
