@@ -217,6 +217,31 @@ map fn (Embedding pos) =
     Embedding (Array.map fn pos)
 
 
+averageEdgeLength : Adjacencies -> Embedding -> Float
+averageEdgeLength adj pos =
+    let
+        es =
+            edges adj
+
+        edgeLength ( v, w ) =
+            Vec3.distance (getPos v pos) (getPos w pos)
+
+        sum =
+            List.foldl (+) 0
+    in
+        sum (List.map edgeLength es) / (toFloat <| List.length es)
+
+
+scaleBy : Float -> Embedding -> Embedding
+scaleBy factor =
+    map (Vec3.scale factor)
+
+
+normalizeTo : Float -> Adjacencies -> Embedding -> Embedding
+normalizeTo len adj pos =
+    scaleBy (len / averageEdgeLength adj pos) pos
+
+
 iterate :
     Placer
     -> Int
@@ -418,12 +443,14 @@ molecular adj =
             1.0e-4
             (genericCooler 0.1 3)
             adj
+        |> normalizeTo 0.1 adj
         |> iterate
             centralRepulsionPlacer
             500
             1.0e-4
             (genericCooler 0.1 3)
             adj
+        |> normalizeTo 1 adj
         |> iterate
             localRepulsionPlacer
             500
