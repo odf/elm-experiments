@@ -47,11 +47,6 @@ type alias Cooler =
 -- List and array helpers
 
 
-sum : List number -> number
-sum =
-    List.foldl (+) 0
-
-
 tailFrom : a -> List a -> List a
 tailFrom a aList =
     case aList of
@@ -232,7 +227,7 @@ averageEdgeLength adj pos =
         edgeLength ( v, w ) =
             Vec3.distance (getPos v pos) (getPos w pos)
     in
-        sum (List.map edgeLength es) / (toFloat <| List.length es)
+        List.sum (List.map edgeLength es) / (toFloat <| List.length es)
 
 
 scaleBy : Float -> Embedding -> Embedding
@@ -256,7 +251,7 @@ distance pos1 pos2 =
     in
         List.range 0 (n - 1)
             |> List.map distSquaredFor
-            |> sum
+            |> List.sum
             |> sqrt
 
 
@@ -317,7 +312,7 @@ initSpherical adj =
                 phi =
                     pi * ((toFloat i) / (toFloat (n - 1)) - 1)
 
-                shiftAndScale v =
+                adjust v =
                     Vec3.add
                         (Vec3.scale (sin phi) v)
                         (vec3 0 0 (cos phi))
@@ -325,7 +320,7 @@ initSpherical adj =
                 List.map2
                     (,)
                     vs
-                    (List.map shiftAndScale (nGon (List.length vs)))
+                    (List.map adjust (nGon (List.length vs)))
     in
         List.foldl
             (\( idx, val ) -> Array.set idx val)
