@@ -6,6 +6,7 @@ module Embed
         , adjacencies
         , getPos
         , edges
+        , initSpherical
         , spherical
         , molecular
         )
@@ -314,7 +315,7 @@ initSpherical adj =
         ring i vs =
             let
                 phi =
-                    pi * ((toFloat i) / (toFloat n) - 1)
+                    pi * ((toFloat i) / (toFloat (n - 1)) - 1)
 
                 shiftAndScale v =
                     Vec3.add
