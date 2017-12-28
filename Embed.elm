@@ -276,22 +276,25 @@ iterate place nrSteps limit temperature adj positions =
             Array.fromList <| List.range 0 (n - 1)
 
         step i pos =
-            let
-                update v =
-                    limitDisplacement
-                        (temperature i nrSteps)
-                        (place pos adj v)
-                        (getPos v pos)
+            if i >= nrSteps then
+                pos
+            else
+                let
+                    update v =
+                        limitDisplacement
+                            (temperature i nrSteps)
+                            (place pos adj v)
+                            (getPos v pos)
 
-                next =
-                    Embedding <| Array.map update verts
-            in
-                if i == nrSteps || distance pos next < limit then
-                    next
-                else
-                    step (i + 1) next
+                    next =
+                        Embedding <| Array.map update verts
+                in
+                    if distance pos next < limit then
+                        next
+                    else
+                        step (i + 1) next
     in
-        step 1 positions
+        step 0 positions
 
 
 genericCooler : Float -> Float -> Cooler
@@ -474,4 +477,4 @@ molecular adj =
             |> normalizeTo 0.1 adj
             |> iterate centralRepulsionPlacer 500 limit cooler adj
             |> normalizeTo 1 adj
-            |> iterate localRepulsionPlacer 0 limit cooler adj
+            |> iterate localRepulsionPlacer 500 limit cooler adj
