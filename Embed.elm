@@ -6,7 +6,7 @@ module Embed
         , adjacencies
         , getPos
         , edges
-        , initSpherical
+        , init
         , spherical
         , molecular
         )
@@ -45,6 +45,23 @@ type alias Cooler =
 
 
 -- List and array helpers
+
+
+indexOf : a -> List a -> Maybe Int
+indexOf a aList =
+    let
+        step i remaining =
+            case remaining of
+                [] ->
+                    Nothing
+
+                x :: rest ->
+                    if x == a then
+                        Just i
+                    else
+                        step (i + 1) rest
+    in
+        step 0 aList
 
 
 tailFrom : a -> List a -> List a
@@ -296,6 +313,23 @@ iterate place nrSteps limit temperature adj positions =
 genericCooler : Float -> Float -> Cooler
 genericCooler factor exponent step maxStep =
     factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
+
+
+init : Embedder
+init adj =
+    let
+        layers =
+            verticesByDistance 0 adj
+
+        ngonAngles n =
+            List.map
+                (\i -> 2 * pi * (toFloat i) / (toFloat n))
+                (List.range 1 n)
+
+        rings =
+            List.map (\vs -> ngonAngles (List.length vs)) layers
+    in
+        initSpherical adj
 
 
 initSpherical : Embedder
