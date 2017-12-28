@@ -275,19 +275,19 @@ iterate place nrSteps limit temperature adj positions =
         verts =
             Array.fromList <| List.range 0 (n - 1)
 
+        update pos t v =
+            limitDisplacement t (place pos adj v) (getPos v pos)
+
         step i pos =
             if i >= nrSteps then
                 pos
             else
                 let
-                    update v =
-                        limitDisplacement
-                            (temperature i nrSteps)
-                            (place pos adj v)
-                            (getPos v pos)
+                    t =
+                        temperature i nrSteps
 
                     next =
-                        Embedding <| Array.map update verts
+                        Embedding <| Array.map (update pos t) verts
                 in
                     if distance pos next < limit then
                         next
