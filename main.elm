@@ -27,11 +27,21 @@ type Msg
     | CameraMsg Camera.Msg
 
 
+graph : Embed.Adjacencies
+graph =
+    GraphMesh.fulleroidI_5_12
+
+
+embedder : Embed.Embedder
+embedder =
+    Embed.molecular
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
-      , mesh = GraphMesh.mesh Embed.molecular GraphMesh.fulleroidI_5_12
+      , mesh = GraphMesh.mesh embedder graph
       , material = initMaterial
       }
     , Task.perform ResizeMsg Window.size
