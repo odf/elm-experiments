@@ -210,6 +210,21 @@ center points =
         Vec3.scale (1 / (toFloat n)) sum
 
 
+ngonAngles : Int -> List Float
+ngonAngles m =
+    List.map
+        (\i -> 2 * pi * (toFloat i) / (toFloat m))
+        (List.range 1 m)
+
+
+pointOnSphere : Float -> Float -> Vec3
+pointOnSphere alpha beta =
+    vec3
+        ((sin beta) * (cos alpha))
+        ((sin beta) * (sin alpha))
+        (cos beta)
+
+
 limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
 limitDisplacement limit vNew vOld =
     let
@@ -325,11 +340,6 @@ init adj =
         n =
             List.length layers
 
-        ngonAngles m =
-            List.map
-                (\i -> 2 * pi * (toFloat i) / (toFloat m))
-                (List.range 1 m)
-
         rings =
             List.map (\vs -> ngonAngles (List.length vs)) layers
 
@@ -341,29 +351,16 @@ init adj =
         ringShifts =
             List.repeat n 0
 
-        specs =
-            List.map4
-                (\vs alphas beta shift ->
-                    List.map2
-                        (\v alpha -> ( v, alpha + shift, beta ))
-                        vs
-                        alphas
-                )
-                layers
-                rings
-                ringAngles
-                ringShifts
-                |> List.concat
-                |> List.sort
+        makeSpecs vs alphas beta shift =
+            List.map2
+                (\v alpha -> ( v, alpha + shift, beta ))
+                vs
+                alphas
     in
-        List.map
-            (\( v, alpha, beta ) ->
-                vec3
-                    ((sin beta) * (cos alpha))
-                    ((sin beta) * (sin alpha))
-                    (cos beta)
-            )
-            specs
+        List.map4 makeSpecs layers rings ringAngles ringShifts
+            |> List.concat
+            |> List.sort
+            |> List.map (\( v, a, b ) -> pointOnSphere a b)
             |> Array.fromList
             |> Embedding
 
