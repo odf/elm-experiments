@@ -44,7 +44,7 @@ type alias Cooler =
 
 
 
--- List and array helpers
+-- List helpers
 
 
 indexOf : a -> List a -> Maybe Int
@@ -184,6 +184,20 @@ face v0 w0 adj =
 -- Geometry helpers
 
 
+mod : Float -> Float -> Float
+mod x y =
+    let
+        q =
+            x / y
+    in
+        (q - (toFloat (floor q))) * y
+
+
+mod2pi : Float -> Float
+mod2pi x =
+    mod x (2 * pi)
+
+
 center : List Vec3 -> Vec3
 center points =
     let
@@ -194,19 +208,6 @@ center points =
             List.foldl Vec3.add (vec3 0 0 0) points
     in
         Vec3.scale (1 / (toFloat n)) sum
-
-
-nGon : Int -> List Vec3
-nGon n =
-    let
-        corner i =
-            let
-                alpha =
-                    2 * pi * (toFloat i) / (toFloat n)
-            in
-                vec3 (cos alpha) (sin alpha) 0.0
-    in
-        List.map corner (List.range 0 (n - 1))
 
 
 limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
@@ -321,45 +322,49 @@ init adj =
         layers =
             verticesByDistance 0 adj
 
-        ngonAngles n =
-            List.map
-                (\i -> 2 * pi * (toFloat i) / (toFloat n))
-                (List.range 1 n)
-
-        rings =
-            List.map (\vs -> ngonAngles (List.length vs)) layers
-    in
-        initSpherical adj
-
-
-initSpherical : Embedder
-initSpherical adj =
-    let
-        layers =
-            verticesByDistance 0 adj
-
         n =
             List.length layers
 
-        ring i vs =
-            let
-                phi =
-                    pi * ((toFloat i) / (toFloat (n - 1)) - 1)
+        ngonAngles m =
+            List.map
+                (\i -> 2 * pi * (toFloat i) / (toFloat m))
+                (List.range 1 m)
 
-                adjust v =
-                    Vec3.add
-                        (Vec3.scale (sin phi) v)
-                        (vec3 0 0 (cos phi))
-            in
-                List.map2
-                    (,)
-                    vs
-                    (List.map adjust (nGon (List.length vs)))
+        rings =
+            List.map (\vs -> ngonAngles (List.length vs)) layers
+
+        ringAngles =
+            List.map
+                (\i -> pi * ((toFloat i) / (toFloat n - 1) - 1))
+                (List.range 0 n)
+
+        ringShifts =
+            List.repeat n 0
+
+        specs =
+            List.map4
+                (\vs alphas beta shift ->
+                    List.map2
+                        (\v alpha -> ( v, alpha + shift, beta ))
+                        vs
+                        alphas
+                )
+                layers
+                rings
+                ringAngles
+                ringShifts
+                |> List.concat
+                |> List.sort
     in
-        List.foldl
-            (\( idx, val ) -> Array.set idx val)
-            (Array.repeat (nrVertices adj) (vec3 0 0 0))
-            (List.concat (List.indexedMap ring layers))
+        List.map
+            (\( v, alpha, beta ) ->
+                vec3
+                    ((sin beta) * (cos alpha))
+                    ((sin beta) * (sin alpha))
+                    (cos beta)
+            )
+            specs
+            |> Array.fromList
             |> Embedding
 
 
@@ -488,7 +493,7 @@ spherical adj =
         cooler =
             genericCooler 0.1 3
     in
-        initSpherical adj
+        init adj
             |> iterate sphericalPlacer 500 limit cooler adj
             |> normalizeTo 1 adj
 
@@ -502,7 +507,7 @@ molecular adj =
         cooler =
             genericCooler 0.1 3
     in
-        initSpherical adj
+        init adj
             |> iterate sphericalPlacer 500 limit cooler adj
             |> normalizeTo 0.1 adj
             |> iterate centralRepulsionPlacer 500 limit cooler adj
