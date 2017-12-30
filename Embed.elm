@@ -138,13 +138,30 @@ edges (Adjacencies adj) =
                     Array.toIndexedList adj
 
 
-nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
-nextLayer seen layers adj =
-    Maybe.withDefault [] (List.head layers)
-        |> List.map (\v -> neighbors v adj)
+traceLayer : Int -> Set Int -> List Int -> Adjacencies -> List Int
+traceLayer start seen layer adj =
+    List.map (\v -> neighbors v adj) layer
         |> List.concat
         |> unique
         |> List.filter (\v -> not (Set.member v seen))
+
+
+nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
+nextLayer seen layers adj =
+    case layers of
+        [] ->
+            []
+
+        current :: _ ->
+            case current of
+                [] ->
+                    []
+
+                v :: [] ->
+                    neighbors v adj
+
+                v :: _ ->
+                    traceLayer v seen current adj
 
 
 verticesByDistance : Int -> Adjacencies -> List (List Int)
