@@ -104,7 +104,7 @@ unique aList =
                     else
                         step (Set.insert a seen) rest (a :: out)
     in
-        step (Set.empty) (List.reverse aList) []
+        List.reverse <| step (Set.empty) aList []
 
 
 
@@ -343,11 +343,20 @@ init adj =
         n =
             List.length layers
 
+        last =
+            Maybe.withDefault [] (List.head (List.reverse layers))
+
+        m =
+            if List.length last > 1 then
+                n
+            else
+                n - 1
+
         rings =
             List.map (\vs -> ngonAngles (List.length vs)) layers
 
         ringAngles =
-            List.range -n -1 |> List.map (\i -> pi * (div i n))
+            List.range 0 (n - 1) |> List.map (\i -> pi * (div i m))
 
         ringShifts =
             -- TODO implement me
