@@ -181,7 +181,12 @@ face v0 w0 adj =
 
 
 
--- Geometry helpers
+-- Geometry and arithmetic helpers
+
+
+div : Int -> Int -> Float
+div a b =
+    (toFloat a) / (toFloat b)
 
 
 mod : Float -> Float -> Float
@@ -207,14 +212,12 @@ center points =
         sum =
             List.foldl Vec3.add (vec3 0 0 0) points
     in
-        Vec3.scale (1 / (toFloat n)) sum
+        Vec3.scale (div 1 n) sum
 
 
 ngonAngles : Int -> List Float
 ngonAngles m =
-    List.map
-        (\i -> 2 * pi * (toFloat i) / (toFloat m))
-        (List.range 1 m)
+    List.range 1 m |> List.map (\i -> 2 * pi * (div i m))
 
 
 pointOnSphere : Float -> Float -> Vec3
@@ -328,7 +331,7 @@ iterate place nrSteps limit temperature adj positions =
 
 genericCooler : Float -> Float -> Cooler
 genericCooler factor exponent step maxStep =
-    factor * (1 - (toFloat step) / (toFloat maxStep)) ^ exponent
+    factor * (1 - (div step maxStep)) ^ exponent
 
 
 init : Embedder
@@ -344,8 +347,7 @@ init adj =
             List.map (\vs -> ngonAngles (List.length vs)) layers
 
         ringAngles =
-            List.range -n -1
-                |> List.map (\i -> pi * (toFloat i) / (toFloat n))
+            List.range -n -1 |> List.map (\i -> pi * (div i n))
 
         ringShifts =
             -- TODO implement me
