@@ -334,12 +334,9 @@ genericCooler factor exponent step maxStep =
     factor * (1 - (div step maxStep)) ^ exponent
 
 
-init : Embedder
-init adj =
+ringAngles : List (List Int) -> List Float
+ringAngles layers =
     let
-        layers =
-            verticesByDistance 0 adj
-
         n =
             List.length layers
 
@@ -351,21 +348,30 @@ init adj =
                 n
             else
                 n - 1
+    in
+        List.range 0 (n - 1) |> List.map (\i -> pi * (div i m))
+
+
+init : Embedder
+init adj =
+    let
+        layers =
+            verticesByDistance 0 adj
 
         rings =
             List.map (\vs -> ngonAngles (List.length vs)) layers
 
-        ringAngles =
-            List.range 0 (n - 1) |> List.map (\i -> pi * (div i m))
+        ringThetas =
+            ringAngles layers
 
         ringShifts =
             -- TODO implement me
-            List.repeat n 0
+            List.repeat (List.length layers) 0
 
         makeSpecs vs phis theta shift =
             List.map2 (\v phi -> ( v, phi + shift, theta )) vs phis
     in
-        List.map4 makeSpecs layers rings ringAngles ringShifts
+        List.map4 makeSpecs layers rings ringThetas ringShifts
             |> List.concat
             |> List.sort
             |> List.map (\( v, phi, theta ) -> pointOnSphere phi theta)
