@@ -221,11 +221,11 @@ ngonAngles m =
 
 
 pointOnSphere : Float -> Float -> Vec3
-pointOnSphere alpha beta =
+pointOnSphere phi theta =
     vec3
-        ((sin beta) * (cos alpha))
-        ((sin beta) * (sin alpha))
-        (cos beta)
+        ((sin theta) * (cos phi))
+        ((sin theta) * (sin phi))
+        (cos theta)
 
 
 limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
@@ -353,13 +353,13 @@ init adj =
             -- TODO implement me
             List.repeat n 0
 
-        makeSpecs vs alphas beta shift =
-            List.map2 (\v a -> ( v, a + shift, beta )) vs alphas
+        makeSpecs vs phis theta shift =
+            List.map2 (\v phi -> ( v, phi + shift, theta )) vs phis
     in
         List.map4 makeSpecs layers rings ringAngles ringShifts
             |> List.concat
             |> List.sort
-            |> List.map (\( v, a, b ) -> pointOnSphere a b)
+            |> List.map (\( v, phi, theta ) -> pointOnSphere phi theta)
             |> Array.fromList
             |> Embedding
 
