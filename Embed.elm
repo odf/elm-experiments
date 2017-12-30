@@ -12,7 +12,7 @@ module Embed
         )
 
 import Array exposing (Array)
-import Set
+import Set exposing (Set)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 
 
@@ -138,21 +138,24 @@ edges (Adjacencies adj) =
                     Array.toIndexedList adj
 
 
+nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
+nextLayer seen layers adj =
+    Maybe.withDefault [] (List.head layers)
+        |> List.map (\v -> neighbors v adj)
+        |> List.concat
+        |> unique
+        |> List.filter (\v -> not (Set.member v seen))
+
+
 verticesByDistance : Int -> Adjacencies -> List (List Int)
 verticesByDistance start adj =
     let
         step seen layers =
-            let
-                next =
-                    Maybe.withDefault [] (List.head layers)
-                        |> List.map (\v -> neighbors v adj)
-                        |> List.concat
-                        |> unique
-                        |> List.filter (\v -> not (Set.member v seen))
-            in
-                if List.isEmpty next then
+            case nextLayer seen layers adj of
+                [] ->
                     layers
-                else
+
+                (_ :: _) as next ->
                     step
                         (List.foldl Set.insert seen next)
                         (next :: layers)
