@@ -344,18 +344,15 @@ init adj =
             List.map (\vs -> ngonAngles (List.length vs)) layers
 
         ringAngles =
-            List.map
-                (\i -> pi * ((toFloat i) / (toFloat n - 1) - 1))
-                (List.range 0 n)
+            List.range -n -1
+                |> List.map (\i -> pi * (toFloat i) / (toFloat n))
 
         ringShifts =
+            -- TODO implement me
             List.repeat n 0
 
         makeSpecs vs alphas beta shift =
-            List.map2
-                (\v alpha -> ( v, alpha + shift, beta ))
-                vs
-                alphas
+            List.map2 (\v a -> ( v, a + shift, beta )) vs alphas
     in
         List.map4 makeSpecs layers rings ringAngles ringShifts
             |> List.concat
