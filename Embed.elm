@@ -107,6 +107,23 @@ unique aList =
         List.reverse <| step (Set.empty) aList []
 
 
+takeWhile : (a -> Bool) -> List a -> List a
+takeWhile pred aList =
+    let
+        step good remaining =
+            case remaining of
+                [] ->
+                    good
+
+                a :: rest ->
+                    if pred a then
+                        step (a :: good) rest
+                    else
+                        good
+    in
+        List.reverse <| step [] aList
+
+
 
 -- Graph helpers
 
@@ -138,12 +155,34 @@ edges (Adjacencies adj) =
                     Array.toIndexedList adj
 
 
+newNeighbors : Int -> Set Int -> Adjacencies -> List Int
+newNeighbors v seen adj =
+    let
+        nbs =
+            neighbors v adj
+
+        isNew v =
+            not (Set.member v seen)
+
+        leading =
+            takeWhile isNew nbs
+
+        trailing =
+            List.reverse nbs |> takeWhile isNew |> List.reverse
+    in
+        if List.isEmpty leading then
+            List.filter isNew nbs
+        else if List.length leading == List.length nbs then
+            leading
+        else
+            trailing ++ leading
+
+
 traceLayer : Int -> Set Int -> List Int -> Adjacencies -> List Int
 traceLayer start seen layer adj =
-    List.map (\v -> neighbors v adj) layer
+    List.map (\v -> newNeighbors v seen adj) layer
         |> List.concat
         |> unique
-        |> List.filter (\v -> not (Set.member v seen))
 
 
 nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
@@ -156,9 +195,6 @@ nextLayer seen layers adj =
             case current of
                 [] ->
                     []
-
-                v :: [] ->
-                    neighbors v adj
 
                 v :: _ ->
                     traceLayer v seen current adj
