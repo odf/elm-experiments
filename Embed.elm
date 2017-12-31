@@ -166,27 +166,22 @@ newNeighbors v seen adj =
             |> List.filter (\v -> not (Set.member v seen))
 
 
-nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
-nextLayer seen layers adj =
-    case layers of
-        [] ->
-            []
-
-        current :: _ ->
-            List.map (\v -> newNeighbors v seen adj) current
-                |> List.concat
-                |> unique
-
-
 verticesByDistance : Int -> Adjacencies -> List (List Int)
 verticesByDistance start adj =
     let
         step seen layers =
-            case nextLayer seen layers adj of
-                [] ->
-                    layers
+            let
+                current =
+                    Maybe.withDefault [] (List.head layers)
 
-                next ->
+                next =
+                    List.map (\v -> newNeighbors v seen adj) current
+                        |> List.concat
+                        |> unique
+            in
+                if List.isEmpty next then
+                    layers
+                else
                     step
                         (List.foldl Set.insert seen next)
                         (next :: layers)
