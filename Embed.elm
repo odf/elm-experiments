@@ -107,21 +107,21 @@ unique aList =
         List.reverse <| step (Set.empty) aList []
 
 
-takeWhile : (a -> Bool) -> List a -> List a
-takeWhile pred aList =
+splitWhen : (a -> Bool) -> List a -> ( List a, List a )
+splitWhen pred aList =
     let
-        step good remaining =
+        step leading remaining =
             case remaining of
                 [] ->
-                    good
+                    ( List.reverse leading, [] )
 
                 a :: rest ->
                     if pred a then
-                        step (a :: good) rest
+                        ( List.reverse leading, remaining )
                     else
-                        good
+                        step (a :: leading) rest
     in
-        List.reverse <| step [] aList
+        step [] aList
 
 
 
@@ -158,31 +158,12 @@ edges (Adjacencies adj) =
 newNeighbors : Int -> Set Int -> Adjacencies -> List Int
 newNeighbors v seen adj =
     let
-        nbs =
+        ( leading, trailing ) =
             neighbors v adj
-
-        isNew v =
-            not (Set.member v seen)
-
-        leading =
-            takeWhile isNew nbs
-
-        trailing =
-            List.reverse nbs |> takeWhile isNew |> List.reverse
+                |> splitWhen (\v -> Set.member v seen)
     in
-        if List.isEmpty leading then
-            List.filter isNew nbs
-        else if List.length leading == List.length nbs then
-            leading
-        else
-            trailing ++ leading
-
-
-traceLayer : Int -> Set Int -> List Int -> Adjacencies -> List Int
-traceLayer start seen layer adj =
-    List.map (\v -> newNeighbors v seen adj) layer
-        |> List.concat
-        |> unique
+        (trailing ++ leading)
+            |> List.filter (\v -> not (Set.member v seen))
 
 
 nextLayer : Set Int -> List (List Int) -> Adjacencies -> List Int
@@ -197,7 +178,9 @@ nextLayer seen layers adj =
                     []
 
                 v :: _ ->
-                    traceLayer v seen current adj
+                    List.map (\v -> newNeighbors v seen adj) current
+                        |> List.concat
+                        |> unique
 
 
 verticesByDistance : Int -> Adjacencies -> List (List Int)
