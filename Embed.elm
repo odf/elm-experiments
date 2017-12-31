@@ -47,23 +47,6 @@ type alias Cooler =
 -- List helpers
 
 
-indexOf : a -> List a -> Maybe Int
-indexOf a aList =
-    let
-        step i remaining =
-            case remaining of
-                [] ->
-                    Nothing
-
-                x :: rest ->
-                    if x == a then
-                        Just i
-                    else
-                        step (i + 1) rest
-    in
-        step 0 aList
-
-
 tailFrom : a -> List a -> List a
 tailFrom a aList =
     case aList of
@@ -189,26 +172,6 @@ verticesByDistance start adj =
         List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
 
 
-face : Int -> Int -> Adjacencies -> Maybe (List Int)
-face v0 w0 adj =
-    let
-        step v w m rest =
-            if m >= nrVertices adj then
-                Nothing
-            else
-                case nextCyclic w (neighbors v adj) of
-                    Nothing ->
-                        Nothing
-
-                    Just u ->
-                        if u == v0 then
-                            Just (w :: rest)
-                        else
-                            step u v (m + 1) (w :: rest)
-    in
-        step v0 w0 0 []
-
-
 
 -- Geometry and arithmetic helpers
 
@@ -216,20 +179,6 @@ face v0 w0 adj =
 div : Int -> Int -> Float
 div a b =
     (toFloat a) / (toFloat b)
-
-
-mod : Float -> Float -> Float
-mod x y =
-    let
-        q =
-            x / y
-    in
-        (q - (toFloat (floor q))) * y
-
-
-mod2pi : Float -> Float
-mod2pi x =
-    mod x (2 * pi)
 
 
 center : List Vec3 -> Vec3
