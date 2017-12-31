@@ -173,14 +173,9 @@ nextLayer seen layers adj =
             []
 
         current :: _ ->
-            case current of
-                [] ->
-                    []
-
-                v :: _ ->
-                    List.map (\v -> newNeighbors v seen adj) current
-                        |> List.concat
-                        |> unique
+            List.map (\v -> newNeighbors v seen adj) current
+                |> List.concat
+                |> unique
 
 
 verticesByDistance : Int -> Adjacencies -> List (List Int)
@@ -191,7 +186,7 @@ verticesByDistance start adj =
                 [] ->
                     layers
 
-                (_ :: _) as next ->
+                next ->
                     step
                         (List.foldl Set.insert seen next)
                         (next :: layers)
