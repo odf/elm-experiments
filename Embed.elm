@@ -76,16 +76,16 @@ nextCyclic a aList =
 unique : List comparable -> List comparable
 unique aList =
     let
-        step seen remaining out =
+        step seen remaining output =
             case remaining of
                 [] ->
-                    out
+                    output
 
                 a :: rest ->
                     if Set.member a seen then
-                        step seen rest out
+                        step seen rest output
                     else
-                        step (Set.insert a seen) rest (a :: out)
+                        step (Set.insert a seen) rest (a :: output)
     in
         List.reverse <| step (Set.empty) aList []
 
@@ -132,10 +132,9 @@ edges (Adjacencies adj) =
         incident ( v, nbs ) =
             List.map (\w -> ( v, w )) nbs
     in
-        List.filter (\( v, w ) -> v < w) <|
-            List.concat <|
-                List.map incident <|
-                    Array.toIndexedList adj
+        Array.toIndexedList adj
+            |> List.concatMap incident
+            |> List.filter (\( v, w ) -> v < w)
 
 
 newNeighbors : Int -> Set Int -> Adjacencies -> List Int
@@ -152,19 +151,17 @@ newNeighbors v seen adj =
 verticesByDistance : Int -> Adjacencies -> List (List Int)
 verticesByDistance start adj =
     let
-        step seen layers =
-            let
-                current =
-                    Maybe.withDefault [] (List.head layers)
+        nextLayer seen layers =
+            Maybe.withDefault [] (List.head layers)
+                |> List.concatMap (\v -> newNeighbors v seen adj)
+                |> unique
 
-                next =
-                    List.map (\v -> newNeighbors v seen adj) current
-                        |> List.concat
-                        |> unique
-            in
-                if List.isEmpty next then
+        step seen layers =
+            case nextLayer seen layers of
+                [] ->
                     layers
-                else
+
+                next ->
                     step
                         (List.foldl Set.insert seen next)
                         (next :: layers)
@@ -181,16 +178,15 @@ div a b =
     (toFloat a) / (toFloat b)
 
 
+average : List Float -> Float
+average fList =
+    List.sum fList * (div 1 (List.length fList))
+
+
 center : List Vec3 -> Vec3
 center points =
-    let
-        n =
-            List.length points
-
-        sum =
-            List.foldl Vec3.add (vec3 0 0 0) points
-    in
-        Vec3.scale (div 1 n) sum
+    List.foldl Vec3.add (vec3 0 0 0) points
+        |> Vec3.scale (div 1 (List.length points))
 
 
 ngonAngles : Int -> List Float
@@ -213,7 +209,9 @@ limitDisplacement limit vNew vOld =
             Vec3.distanceSquared vNew vOld
     in
         if dist > limit then
-            Vec3.add vOld (Vec3.scale (limit / dist) (Vec3.sub vNew vOld))
+            Vec3.add
+                vOld
+                (Vec3.scale (limit / dist) (Vec3.sub vNew vOld))
         else
             vNew
 
@@ -232,16 +230,17 @@ map fn (Embedding pos) =
     Embedding (Array.map fn pos)
 
 
+pointList : Embedding -> List Vec3
+pointList (Embedding p) =
+    Array.toList p
+
+
 averageEdgeLength : Adjacencies -> Embedding -> Float
 averageEdgeLength adj pos =
-    let
-        es =
-            edges adj
-
-        edgeLength ( v, w ) =
-            Vec3.distance (getPos v pos) (getPos w pos)
-    in
-        List.sum (List.map edgeLength es) / (toFloat <| List.length es)
+    edges adj
+        |> List.map
+            (\( v, w ) -> Vec3.distance (getPos v pos) (getPos w pos))
+        |> average
 
 
 scaleBy : Float -> Embedding -> Embedding
@@ -256,17 +255,9 @@ normalizeTo len adj pos =
 
 distance : Embedding -> Embedding -> Float
 distance pos1 pos2 =
-    let
-        n =
-            (\(Embedding p) -> Array.length p) pos1
-
-        distSquaredFor v =
-            Vec3.distanceSquared (getPos v pos1) (getPos v pos2)
-    in
-        List.range 0 (n - 1)
-            |> List.map distSquaredFor
-            |> List.sum
-            |> sqrt
+    List.map2 Vec3.distanceSquared (pointList pos1) (pointList pos2)
+        |> List.sum
+        |> sqrt
 
 
 iterate :
@@ -450,8 +441,7 @@ localRepulsionPlacer pos adj v =
     let
         ( points, weights ) =
             neighbors v adj
-                |> List.map (pointsAndWeights pos adj v)
-                |> List.concat
+                |> List.concatMap (pointsAndWeights pos adj v)
                 |> List.unzip
 
         sumPos =
