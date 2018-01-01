@@ -270,30 +270,24 @@ iterate :
     -> Embedding
 iterate place nrSteps limit temperature adj positions =
     let
-        n =
-            nrVertices adj
-
         verts =
-            Array.fromList <| List.range 0 (n - 1)
+            Array.fromList <| List.range 0 (nrVertices adj - 1)
 
-        update pos t v =
-            limitDisplacement t (place pos adj v) (getPos v pos)
+        update pos i v =
+            limitDisplacement
+                (temperature i nrSteps)
+                (place pos adj v)
+                (getPos v pos)
 
         step i pos =
-            if i >= nrSteps then
-                pos
-            else
-                let
-                    t =
-                        temperature i nrSteps
-
-                    next =
-                        Embedding <| Array.map (update pos t) verts
-                in
-                    if distance pos next < limit then
-                        next
-                    else
-                        step (i + 1) next
+            let
+                next =
+                    Embedding (Array.map (update pos i) verts)
+            in
+                if i >= nrSteps || distance pos next < limit then
+                    next
+                else
+                    step (i + 1) next
     in
         step 0 positions
 
