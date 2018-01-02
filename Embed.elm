@@ -4,6 +4,7 @@ module Embed
         , Embedding
         , Embedder
         , adjacencies
+        , embedding
         , getPos
         , edges
         , init
@@ -220,6 +221,11 @@ limitDisplacement limit vNew vOld =
 -- Generic embedding code
 
 
+embedding : List Vec3 -> Embedding
+embedding =
+    Embedding << Array.fromList
+
+
 getPos : Int -> Embedding -> Vec3
 getPos v (Embedding pos) =
     Maybe.withDefault (vec3 0 0 0) (Array.get v pos)
@@ -271,7 +277,7 @@ iterate :
 iterate place nrSteps limit temperature adj positions =
     let
         verts =
-            Array.fromList <| List.range 0 (nrVertices adj - 1)
+            List.range 0 (nrVertices adj - 1)
 
         update pos i v =
             limitDisplacement
@@ -282,7 +288,7 @@ iterate place nrSteps limit temperature adj positions =
         step i pos =
             let
                 next =
-                    Embedding (Array.map (update pos i) verts)
+                    embedding (List.map (update pos i) verts)
             in
                 if i >= nrSteps || distance pos next < limit then
                     next
@@ -338,8 +344,7 @@ init adj =
             |> List.concat
             |> List.sort
             |> List.map (\( v, phi, theta ) -> pointOnSphere phi theta)
-            |> Array.fromList
-            |> Embedding
+            |> embedding
 
 
 
