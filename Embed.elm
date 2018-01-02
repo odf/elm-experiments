@@ -48,32 +48,6 @@ type alias Cooler =
 -- List helpers
 
 
-tailFrom : a -> List a -> List a
-tailFrom a aList =
-    case aList of
-        [] ->
-            []
-
-        x :: rest ->
-            if x == a then
-                aList
-            else
-                tailFrom a rest
-
-
-nextCyclic : a -> List a -> Maybe a
-nextCyclic a aList =
-    case tailFrom a aList of
-        [] ->
-            Nothing
-
-        a :: [] ->
-            List.head aList
-
-        a :: b :: _ ->
-            Just b
-
-
 unique : List comparable -> List comparable
 unique aList =
     let
@@ -108,6 +82,15 @@ splitWhen pred aList =
         step [] aList
 
 
+filterAndCyclicReorder : (a -> Bool) -> List a -> List a
+filterAndCyclicReorder pred aList =
+    let
+        ( leading, trailing ) =
+            splitWhen (\a -> not (pred a)) aList
+    in
+        List.filter pred (trailing ++ leading)
+
+
 
 -- Graph helpers
 
@@ -140,13 +123,9 @@ edges (Adjacencies adj) =
 
 newNeighbors : Int -> Set Int -> Adjacencies -> List Int
 newNeighbors v seen adj =
-    let
-        ( leading, trailing ) =
-            neighbors v adj
-                |> splitWhen (\v -> Set.member v seen)
-    in
-        (trailing ++ leading)
-            |> List.filter (\v -> not (Set.member v seen))
+    filterAndCyclicReorder
+        (\u -> not (Set.member u seen))
+        (neighbors v adj)
 
 
 verticesByDistance : Int -> Adjacencies -> List (List Int)
@@ -357,17 +336,14 @@ sphericalPlacer pos adj v =
         p =
             getPos v pos
 
-        weightedPos w =
-            let
-                q =
-                    getPos w pos
-            in
-                Vec3.scale (Vec3.distanceSquared p q) q
-
         s =
-            center <| List.map weightedPos <| neighbors v adj
+            neighbors v adj
+                |> List.map (\w -> getPos w pos)
+                |> List.map
+                    (\q -> Vec3.scale (Vec3.distanceSquared p q) q)
+                |> center
     in
-        if (Vec3.length s) < 1.0e-8 then
+        if Vec3.length s < 1.0e-8 then
             Vec3.normalize p
         else
             Vec3.normalize s
@@ -388,19 +364,15 @@ centralRepulsionPlacer pos adj v =
         wgtNbs =
             List.map (Vec3.distanceSquared posV) posNbs
 
-        sumPos =
-            List.foldl
-                Vec3.add
-                (Vec3.scale wgtV posV)
-                (List.map2 Vec3.scale wgtNbs posNbs)
-
         sumWgt =
             List.foldl (+) wgtV wgtNbs
     in
         if sumWgt < 1.0e-8 then
             posV
         else
-            Vec3.scale (1 / sumWgt) sumPos
+            List.map2 Vec3.scale wgtNbs posNbs
+                |> List.foldl Vec3.add (Vec3.scale wgtV posV)
+                |> Vec3.scale (1 / sumWgt)
 
 
 pointsAndWeights :
@@ -411,27 +383,19 @@ pointsAndWeights :
     -> List ( Vec3, Float )
 pointsAndWeights pos adj v w =
     let
-        posV =
-            getPos v pos
-
-        nbsW =
-            neighbors w adj
+        rest =
+            filterAndCyclicReorder (\u -> u /= v) (neighbors w adj)
 
         pointAndWeight u =
-            case u of
-                Nothing ->
-                    ( posV, 0 )
-
-                Just u ->
-                    let
-                        posU =
-                            getPos u pos
-                    in
-                        ( posU, -0.5 / Vec3.distanceSquared posV posU )
+            ( getPos u pos
+            , -0.5 / Vec3.distanceSquared (getPos v pos) (getPos u pos)
+            )
     in
         [ ( getPos w pos, 1 )
-        , pointAndWeight <| nextCyclic v nbsW
-        , pointAndWeight <| nextCyclic v <| List.reverse nbsW
+        , pointAndWeight
+            (Maybe.withDefault w <| List.head <| List.reverse rest)
+        , pointAndWeight
+            (Maybe.withDefault w <| List.head rest)
         ]
 
 
@@ -442,20 +406,13 @@ localRepulsionPlacer pos adj v =
             neighbors v adj
                 |> List.concatMap (pointsAndWeights pos adj v)
                 |> List.unzip
-
-        sumPos =
-            List.foldl
-                Vec3.add
-                (vec3 0 0 0)
-                (List.map2 Vec3.scale weights points)
-
-        sumWgt =
-            List.foldl (+) 0 weights
     in
-        if sumWgt < 1.0e-8 then
+        if List.sum weights < 1.0e-8 then
             getPos v pos
         else
-            Vec3.scale (1 / sumWgt) sumPos
+            List.map2 Vec3.scale weights points
+                |> List.foldl Vec3.add (vec3 0 0 0)
+                |> Vec3.scale (1 / List.sum weights)
 
 
 
