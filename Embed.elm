@@ -13,8 +13,10 @@ module Embed
         )
 
 import Array exposing (Array)
-import Set exposing (Set)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Set exposing (Set)
+import ListHelpers
+import GeometryHelpers
 
 
 -- Data types
@@ -42,53 +44,6 @@ type alias Normalizer =
 
 type alias Cooler =
     Int -> Int -> Float
-
-
-
--- List helpers
-
-
-unique : List comparable -> List comparable
-unique aList =
-    let
-        step seen remaining output =
-            case remaining of
-                [] ->
-                    output
-
-                a :: rest ->
-                    if Set.member a seen then
-                        step seen rest output
-                    else
-                        step (Set.insert a seen) rest (a :: output)
-    in
-        List.reverse <| step (Set.empty) aList []
-
-
-splitWhen : (a -> Bool) -> List a -> ( List a, List a )
-splitWhen pred aList =
-    let
-        step leading remaining =
-            case remaining of
-                [] ->
-                    ( List.reverse leading, [] )
-
-                a :: rest ->
-                    if pred a then
-                        ( List.reverse leading, remaining )
-                    else
-                        step (a :: leading) rest
-    in
-        step [] aList
-
-
-filterAndCyclicReorder : (a -> Bool) -> List a -> List a
-filterAndCyclicReorder pred aList =
-    let
-        ( leading, trailing ) =
-            splitWhen (\a -> not (pred a)) aList
-    in
-        List.filter pred (trailing ++ leading)
 
 
 
@@ -123,7 +78,7 @@ edges (Adjacencies adj) =
 
 newNeighbors : Int -> Set Int -> Adjacencies -> List Int
 newNeighbors v seen adj =
-    filterAndCyclicReorder
+    ListHelpers.filterCyclicFromSplit
         (\u -> not (Set.member u seen))
         (neighbors v adj)
 
@@ -134,7 +89,7 @@ verticesByDistance start adj =
         nextLayer seen layers =
             Maybe.withDefault [] (List.head layers)
                 |> List.concatMap (\v -> newNeighbors v seen adj)
-                |> unique
+                |> ListHelpers.unique
 
         step seen layers =
             case nextLayer seen layers of
@@ -147,53 +102,6 @@ verticesByDistance start adj =
                         (next :: layers)
     in
         List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
-
-
-
--- Geometry and arithmetic helpers
-
-
-div : Int -> Int -> Float
-div a b =
-    (toFloat a) / (toFloat b)
-
-
-average : List Float -> Float
-average fList =
-    List.sum fList * (div 1 (List.length fList))
-
-
-center : List Vec3 -> Vec3
-center points =
-    List.foldl Vec3.add (vec3 0 0 0) points
-        |> Vec3.scale (div 1 (List.length points))
-
-
-ngonAngles : Int -> List Float
-ngonAngles m =
-    List.range 1 m |> List.map (\i -> 2 * pi * (div i m))
-
-
-pointOnSphere : Float -> Float -> Vec3
-pointOnSphere phi theta =
-    vec3
-        ((sin theta) * (cos phi))
-        ((sin theta) * (sin phi))
-        (cos theta)
-
-
-limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
-limitDisplacement limit vNew vOld =
-    let
-        dist =
-            Vec3.distanceSquared vNew vOld
-    in
-        if dist > limit then
-            Vec3.add
-                vOld
-                (Vec3.scale (limit / dist) (Vec3.sub vNew vOld))
-        else
-            vNew
 
 
 
@@ -225,7 +133,7 @@ averageEdgeLength adj pos =
     edges adj
         |> List.map
             (\( v, w ) -> Vec3.distance (getPos v pos) (getPos w pos))
-        |> average
+        |> GeometryHelpers.average
 
 
 scaleBy : Float -> Embedding -> Embedding
@@ -259,7 +167,7 @@ iterate place nrSteps limit temperature adj positions =
             List.range 0 (nrVertices adj - 1)
 
         update pos i v =
-            limitDisplacement
+            GeometryHelpers.limitDisplacement
                 (temperature i nrSteps)
                 (place pos adj v)
                 (getPos v pos)
@@ -279,7 +187,7 @@ iterate place nrSteps limit temperature adj positions =
 
 genericCooler : Float -> Float -> Cooler
 genericCooler factor exponent step maxStep =
-    factor * (1 - (div step maxStep)) ^ exponent
+    factor * (1 - (GeometryHelpers.div step maxStep)) ^ exponent
 
 
 ringAngles : List (List Int) -> List Float
@@ -297,7 +205,8 @@ ringAngles layers =
             else
                 n - 1
     in
-        List.range 0 (n - 1) |> List.map (\i -> pi * (div i m))
+        List.range 0 (n - 1)
+            |> List.map (\i -> pi * (GeometryHelpers.div i m))
 
 
 init : Embedder
@@ -307,7 +216,9 @@ init adj =
             verticesByDistance 0 adj
 
         rings =
-            List.map (\vs -> ngonAngles (List.length vs)) layers
+            List.map
+                (\vs -> GeometryHelpers.ngonAngles (List.length vs))
+                layers
 
         ringThetas =
             ringAngles layers
@@ -322,7 +233,10 @@ init adj =
         List.map4 makeSpecs layers rings ringThetas ringShifts
             |> List.concat
             |> List.sort
-            |> List.map (\( v, phi, theta ) -> pointOnSphere phi theta)
+            |> List.map
+                (\( v, phi, theta ) ->
+                    GeometryHelpers.pointOnSphere phi theta
+                )
             |> embedding
 
 
@@ -341,7 +255,7 @@ sphericalPlacer pos adj v =
                 |> List.map (\w -> getPos w pos)
                 |> List.map
                     (\q -> Vec3.scale (Vec3.distanceSquared p q) q)
-                |> center
+                |> GeometryHelpers.center
     in
         if Vec3.length s < 1.0e-8 then
             Vec3.normalize p
@@ -384,7 +298,9 @@ pointsAndWeights :
 pointsAndWeights pos adj v w =
     let
         rest =
-            filterAndCyclicReorder (\u -> u /= v) (neighbors w adj)
+            ListHelpers.filterCyclicFromSplit
+                (\u -> u /= v)
+                (neighbors w adj)
 
         pointAndWeight u =
             ( getPos u pos
