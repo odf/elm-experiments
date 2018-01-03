@@ -7,8 +7,8 @@ import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import Window
-import SurfaceGraph
-import GraphMesh
+import SurfaceGraph exposing (Graph)
+import GraphExamples
 import Embed
 import Camera
 import Renderer
@@ -30,7 +30,7 @@ type Msg
 
 graph : SurfaceGraph.Graph
 graph =
-    GraphMesh.fulleroidI_5_12
+    GraphExamples.fulleroidI_5_12
 
 
 embedder : Embed.Embedder
@@ -38,11 +38,30 @@ embedder =
     Embed.molecular
 
 
+mesh : Embed.Embedder -> Graph -> WebGL.Mesh Renderer.Vertex
+mesh embedder adj =
+    let
+        pos =
+            embedder adj
+
+        meshVertex v =
+            let
+                p =
+                    Embed.getPos v pos
+            in
+                { color = (vec3 1 1 1), pos = p, normal = p }
+
+        meshEdge ( v, w ) =
+            ( meshVertex v, meshVertex w )
+    in
+        WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
       , cameraModel = Camera.initialModel
-      , mesh = GraphMesh.mesh embedder graph
+      , mesh = mesh embedder graph
       , material = initMaterial
       }
     , Task.perform ResizeMsg Window.size
