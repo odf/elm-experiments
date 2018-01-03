@@ -7,6 +7,7 @@ import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
 import Window
+import SurfaceGraph
 import GraphMesh
 import Embed
 import Camera
@@ -27,7 +28,7 @@ type Msg
     | CameraMsg Camera.Msg
 
 
-graph : Embed.Adjacencies
+graph : SurfaceGraph.Graph
 graph =
     GraphMesh.fulleroidI_5_12
 

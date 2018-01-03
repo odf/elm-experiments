@@ -1,12 +1,9 @@
 module Embed
     exposing
-        ( Adjacencies
-        , Embedding
+        ( Embedding
         , Embedder
-        , adjacencies
         , embedding
         , getPos
-        , edges
         , init
         , spherical
         , molecular
@@ -14,16 +11,12 @@ module Embed
 
 import Array exposing (Array)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Set exposing (Set)
 import ListHelpers
 import GeometryHelpers
+import SurfaceGraph exposing (Graph)
 
 
 -- Data types
-
-
-type Adjacencies
-    = Adjacencies (Array (List Int))
 
 
 type Embedding
@@ -31,11 +24,11 @@ type Embedding
 
 
 type alias Embedder =
-    Adjacencies -> Embedding
+    Graph -> Embedding
 
 
 type alias Placer =
-    Embedding -> Adjacencies -> Int -> Vec3
+    Embedding -> Graph -> Int -> Vec3
 
 
 type alias Normalizer =
@@ -44,64 +37,6 @@ type alias Normalizer =
 
 type alias Cooler =
     Int -> Int -> Float
-
-
-
--- Graph helpers
-
-
-adjacencies : List (List Int) -> Adjacencies
-adjacencies =
-    Adjacencies << Array.fromList
-
-
-neighbors : Int -> Adjacencies -> List Int
-neighbors v (Adjacencies adj) =
-    Maybe.withDefault [] (Array.get v adj)
-
-
-nrVertices : Adjacencies -> Int
-nrVertices (Adjacencies adj) =
-    Array.length adj
-
-
-edges : Adjacencies -> List ( Int, Int )
-edges (Adjacencies adj) =
-    let
-        incident ( v, nbs ) =
-            List.map (\w -> ( v, w )) nbs
-    in
-        Array.toIndexedList adj
-            |> List.concatMap incident
-            |> List.filter (\( v, w ) -> v < w)
-
-
-newNeighbors : Int -> Set Int -> Adjacencies -> List Int
-newNeighbors v seen adj =
-    ListHelpers.filterCyclicFromSplit
-        (\u -> not (Set.member u seen))
-        (neighbors v adj)
-
-
-verticesByDistance : Int -> Adjacencies -> List (List Int)
-verticesByDistance start adj =
-    let
-        nextLayer seen layers =
-            Maybe.withDefault [] (List.head layers)
-                |> List.concatMap (\v -> newNeighbors v seen adj)
-                |> ListHelpers.unique
-
-        step seen layers =
-            case nextLayer seen layers of
-                [] ->
-                    layers
-
-                next ->
-                    step
-                        (List.foldl Set.insert seen next)
-                        (next :: layers)
-    in
-        List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
 
 
 
@@ -128,9 +63,9 @@ pointList (Embedding p) =
     Array.toList p
 
 
-averageEdgeLength : Adjacencies -> Embedding -> Float
+averageEdgeLength : Graph -> Embedding -> Float
 averageEdgeLength adj pos =
-    edges adj
+    SurfaceGraph.edges adj
         |> List.map
             (\( v, w ) -> Vec3.distance (getPos v pos) (getPos w pos))
         |> GeometryHelpers.average
@@ -141,7 +76,7 @@ scaleBy factor =
     map (Vec3.scale factor)
 
 
-normalizeTo : Float -> Adjacencies -> Embedding -> Embedding
+normalizeTo : Float -> Graph -> Embedding -> Embedding
 normalizeTo len adj pos =
     scaleBy (len / averageEdgeLength adj pos) pos
 
@@ -158,13 +93,13 @@ iterate :
     -> Int
     -> Float
     -> Cooler
-    -> Adjacencies
+    -> Graph
     -> Embedding
     -> Embedding
 iterate place nrSteps limit temperature adj positions =
     let
         verts =
-            List.range 0 (nrVertices adj - 1)
+            List.range 0 (SurfaceGraph.nrVertices adj - 1)
 
         update pos i v =
             GeometryHelpers.limitDisplacement
@@ -213,7 +148,7 @@ init : Embedder
 init adj =
     let
         layers =
-            verticesByDistance 0 adj
+            SurfaceGraph.verticesByDistance 0 adj
 
         rings =
             List.map
@@ -251,7 +186,7 @@ sphericalPlacer pos adj v =
             getPos v pos
 
         s =
-            neighbors v adj
+            SurfaceGraph.neighbors v adj
                 |> List.map (\w -> getPos w pos)
                 |> List.map
                     (\q -> Vec3.scale (Vec3.distanceSquared p q) q)
@@ -273,7 +208,8 @@ centralRepulsionPlacer pos adj v =
             1 / (Vec3.lengthSquared posV)
 
         posNbs =
-            List.map (\w -> getPos w pos) <| neighbors v adj
+            SurfaceGraph.neighbors v adj
+                |> List.map (\w -> getPos w pos)
 
         wgtNbs =
             List.map (Vec3.distanceSquared posV) posNbs
@@ -291,7 +227,7 @@ centralRepulsionPlacer pos adj v =
 
 pointsAndWeights :
     Embedding
-    -> Adjacencies
+    -> Graph
     -> Int
     -> Int
     -> List ( Vec3, Float )
@@ -300,7 +236,7 @@ pointsAndWeights pos adj v w =
         rest =
             ListHelpers.filterCyclicFromSplit
                 (\u -> u /= v)
-                (neighbors w adj)
+                (SurfaceGraph.neighbors w adj)
 
         pointAndWeight u =
             ( getPos u pos
@@ -319,7 +255,7 @@ localRepulsionPlacer : Placer
 localRepulsionPlacer pos adj v =
     let
         ( points, weights ) =
-            neighbors v adj
+            SurfaceGraph.neighbors v adj
                 |> List.concatMap (pointsAndWeights pos adj v)
                 |> List.unzip
     in

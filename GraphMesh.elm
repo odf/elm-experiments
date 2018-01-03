@@ -4,9 +4,10 @@ import Math.Vector3 exposing (vec3)
 import WebGL
 import Embed
 import Renderer
+import SurfaceGraph exposing (Graph, graph)
 
 
-mesh : Embed.Embedder -> Embed.Adjacencies -> WebGL.Mesh Renderer.Vertex
+mesh : Embed.Embedder -> Graph -> WebGL.Mesh Renderer.Vertex
 mesh embedder adj =
     let
         pos =
@@ -22,16 +23,16 @@ mesh embedder adj =
         meshEdge ( v, w ) =
             ( meshVertex v, meshVertex w )
     in
-        WebGL.lines <| List.map meshEdge <| Embed.edges adj
+        WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
 
 
 
 -- Some example graphs
 
 
-cube : Embed.Adjacencies
+cube : Graph
 cube =
-    Embed.adjacencies
+    graph
         [ [ 4, 3, 1 ]
         , [ 5, 0, 2 ]
         , [ 6, 1, 3 ]
@@ -43,9 +44,9 @@ cube =
         ]
 
 
-dodecahedron : Embed.Adjacencies
+dodecahedron : Graph
 dodecahedron =
-    Embed.adjacencies
+    graph
         [ [ 1, 5, 4 ]
         , [ 2, 6, 0 ]
         , [ 3, 7, 1 ]
@@ -69,9 +70,9 @@ dodecahedron =
         ]
 
 
-c60 : Embed.Adjacencies
+c60 : Graph
 c60 =
-    Embed.adjacencies <|
+    graph <|
         [ [ 17, 18, 1 ]
         , [ 0, 2, 39 ]
         , [ 1, 31, 3 ]
@@ -135,9 +136,9 @@ c60 =
         ]
 
 
-fulleroidI_5_7a : Embed.Adjacencies
+fulleroidI_5_7a : Graph
 fulleroidI_5_7a =
-    Embed.adjacencies <|
+    graph <|
         [ [ 1, 2, 10 ]
         , [ 52, 4, 0 ]
         , [ 3, 9, 0 ]
@@ -401,9 +402,9 @@ fulleroidI_5_7a =
         ]
 
 
-fulleroidI_5_7b : Embed.Adjacencies
+fulleroidI_5_7b : Graph
 fulleroidI_5_7b =
-    Embed.adjacencies <|
+    graph <|
         [ [ 1, 6, 10 ]
         , [ 53, 2, 0 ]
         , [ 1, 57, 3 ]
@@ -667,9 +668,9 @@ fulleroidI_5_7b =
         ]
 
 
-fulleroidI_5_8 : Embed.Adjacencies
+fulleroidI_5_8 : Graph
 fulleroidI_5_8 =
-    Embed.adjacencies <|
+    graph <|
         [ [ 4, 1, 16 ]
         , [ 2, 6, 0 ]
         , [ 5, 3, 1 ]
@@ -873,9 +874,9 @@ fulleroidI_5_8 =
         ]
 
 
-fulleroidI_5_12 : Embed.Adjacencies
+fulleroidI_5_12 : Graph
 fulleroidI_5_12 =
-    Embed.adjacencies <|
+    graph <|
         [ [ 6, 1, 26 ]
         , [ 2, 12, 0 ]
         , [ 17, 3, 1 ]
