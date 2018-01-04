@@ -107,11 +107,11 @@ testsForFilterCyclicFromSplit =
 
 suite : Test
 suite =
-    describe "The ListHelper module"
-        [ describe "ListHelper.unique"
+    describe "The ListHelpers module"
+        [ describe "ListHelpers.unique"
             testsForUnique
-        , describe "ListHelper.splitWhen"
+        , describe "ListHelpers.splitWhen"
             testsForSplitWhen
-        , describe "ListHelper.filterCyclicFromSplit"
+        , describe "ListHelpers.filterCyclicFromSplit"
             testsForFilterCyclicFromSplit
         ]
