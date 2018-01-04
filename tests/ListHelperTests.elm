@@ -1,8 +1,8 @@
-module ListHelperTests exposing (..)
+module ListHelperTests exposing (suite)
 
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
-import Test exposing (..)
+import Fuzz exposing (int, list)
+import Test exposing (Test, describe, fuzz)
 import Set exposing (Set)
 import ListHelpers
 
