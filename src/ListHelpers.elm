@@ -1,4 +1,9 @@
-module ListHelpers exposing (unique, splitWhen, filterCyclicFromSplit)
+module ListHelpers
+    exposing
+        ( unique
+        , splitWhen
+        , filterCyclicFromSplit
+        )
 
 import Set exposing (Set)
 

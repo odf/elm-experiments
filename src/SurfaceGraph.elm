@@ -17,10 +17,6 @@ type Graph
     = Graph (Array (List Int))
 
 
-
--- Graph helpers
-
-
 graph : List (List Int) -> Graph
 graph =
     Graph << Array.fromList
