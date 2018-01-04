@@ -14,7 +14,7 @@ unique aList =
         step seen remaining output =
             case remaining of
                 [] ->
-                    output
+                    List.reverse output
 
                 a :: rest ->
                     if Set.member a seen then
@@ -22,7 +22,7 @@ unique aList =
                     else
                         step (Set.insert a seen) rest (a :: output)
     in
-        List.reverse <| step (Set.empty) aList []
+        step (Set.empty) aList []
 
 
 splitWhen : (a -> Bool) -> List a -> ( List a, List a )
