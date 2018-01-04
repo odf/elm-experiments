@@ -1,11 +1,10 @@
 {
     "version": "1.0.0",
-    "summary": "Examples",
-    "repository": "https://github.com/elm-community/webgl.git",
+    "summary": "Surface graph embedder and viewer written in Elm",
+    "repository": "https://github.com/odf/elm-experiments.git",
     "license": "BSD3",
     "source-directories": [
-        ".",
-        "../src"
+        "./src"
     ],
     "exposed-modules": [],
     "native-modules": true,
