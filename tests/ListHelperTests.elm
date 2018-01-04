@@ -50,58 +50,68 @@ pred n =
     n % 3 == 0
 
 
+testsForUnique : List Test
+testsForUnique =
+    [ fuzz (list int) "preserves the set of elements" <|
+        \list ->
+            Expect.equalSets
+                (Set.fromList list)
+                (Set.fromList <| ListHelpers.unique list)
+    , fuzz (list int) "removes duplicates" <|
+        \list ->
+            ListHelpers.unique list
+                |> List.sort
+                |> (\xs -> List.map2 (,) xs (List.drop 1 xs))
+                |> List.filter (\( a, b ) -> a == b)
+                |> Expect.equalLists []
+    , fuzz (list int) "preserves order" <|
+        \list ->
+            ListHelpers.unique list
+                |> expectMatchingFirsts Set.empty list
+    ]
+
+
+testsForSplitWhen : List Test
+testsForSplitWhen =
+    [ fuzz (list int) "sublists rejoin to original list" <|
+        \list ->
+            ListHelpers.splitWhen pred list
+                |> (\( lead, trail ) -> (lead ++ trail))
+                |> Expect.equalLists list
+    , fuzz (list int) "first sublist members fail predicate" <|
+        \list ->
+            ListHelpers.splitWhen pred list
+                |> (\( lead, trail ) -> lead)
+                |> List.filter pred
+                |> Expect.equalLists []
+    , fuzz (list int) "second sublist head passes predicate" <|
+        \list ->
+            ListHelpers.splitWhen pred list
+                |> (\( lead, trail ) -> trail)
+                |> mapHead pred True
+                |> Expect.true "expected to pass predicate"
+    ]
+
+
+testsForFilterCyclicFromSplit : List Test
+testsForFilterCyclicFromSplit =
+    [ fuzz (list int) "filters while preserving cyclic runs" <|
+        \list ->
+            ListHelpers.splitWhen (\a -> not (pred a)) list
+                |> (\( lead, trail ) -> (trail ++ lead))
+                |> List.filter pred
+                |> Expect.equalLists
+                    (ListHelpers.filterCyclicFromSplit pred list)
+    ]
+
+
 suite : Test
 suite =
     describe "The ListHelper module"
         [ describe "ListHelper.unique"
-            [ fuzz (list int) "preserves the set of elements" <|
-                \list ->
-                    Expect.equalSets
-                        (Set.fromList list)
-                        (Set.fromList <| ListHelpers.unique list)
-            , fuzz (list int) "removes duplicates" <|
-                \list ->
-                    ListHelpers.unique list
-                        |> List.sort
-                        |> (\xs -> List.map2 (,) xs (List.drop 1 xs))
-                        |> List.filter (\( a, b ) -> a == b)
-                        |> Expect.equalLists []
-            , fuzz (list int) "preserves order" <|
-                \list ->
-                    expectMatchingFirsts
-                        Set.empty
-                        list
-                        (ListHelpers.unique list)
-            ]
+            testsForUnique
         , describe "ListHelper.splitWhen"
-            [ fuzz (list int) "sublists rejoin to original list" <|
-                \list ->
-                    ListHelpers.splitWhen pred list
-                        |> (\( lead, trail ) -> (lead ++ trail))
-                        |> Expect.equalLists list
-            , fuzz (list int) "first sublist members fail predicate" <|
-                \list ->
-                    ListHelpers.splitWhen pred list
-                        |> (\( lead, trail ) -> lead)
-                        |> List.filter pred
-                        |> Expect.equalLists []
-            , fuzz (list int) "second sublist head passes predicate" <|
-                \list ->
-                    ListHelpers.splitWhen pred list
-                        |> (\( lead, trail ) -> trail)
-                        |> mapHead pred True
-                        |> Expect.true "expected to pass predicate"
-            ]
+            testsForSplitWhen
         , describe "ListHelper.filterCyclicFromSplit"
-            [ fuzz (list int) "filters while preserving cyclic runs" <|
-                \list ->
-                    ListHelpers.splitWhen (\a -> not (pred a)) list
-                        |> (\( lead, trail ) -> (trail ++ lead))
-                        |> List.filter pred
-                        |> Expect.equalLists
-                            (ListHelpers.filterCyclicFromSplit
-                                pred
-                                list
-                            )
-            ]
+            testsForFilterCyclicFromSplit
         ]
