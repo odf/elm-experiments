@@ -17,12 +17,12 @@ mapHead fn default list =
             fn x
 
 
-expectMatchingFirstAppearanceOrders :
+expectMatchingFirsts :
     Set comparable
     -> List comparable
     -> List comparable
     -> Expectation
-expectMatchingFirstAppearanceOrders seen listA listB =
+expectMatchingFirsts seen listA listB =
     let
         seenFirst list =
             mapHead (\x -> Set.member x seen) False list
@@ -33,11 +33,11 @@ expectMatchingFirstAppearanceOrders seen listA listB =
         if List.isEmpty listA && List.isEmpty listB then
             Expect.pass
         else if seenFirst listA then
-            expectMatchingFirstAppearanceOrders seen (List.drop 1 listA) listB
+            expectMatchingFirsts seen (List.drop 1 listA) listB
         else if seenFirst listB then
-            expectMatchingFirstAppearanceOrders seen listA (List.drop 1 listB)
+            expectMatchingFirsts seen listA (List.drop 1 listB)
         else if List.head listA == List.head listB then
-            expectMatchingFirstAppearanceOrders
+            expectMatchingFirsts
                 (rememberFirst listA)
                 (List.drop 1 listA)
                 (List.drop 1 listB)
@@ -68,7 +68,7 @@ suite =
                         |> Expect.equalLists []
             , fuzz (list int) "preserves order" <|
                 \list ->
-                    expectMatchingFirstAppearanceOrders
+                    expectMatchingFirsts
                         Set.empty
                         list
                         (ListHelpers.unique list)
@@ -93,7 +93,7 @@ suite =
                         |> Expect.true "expected to pass predicate"
             ]
         , describe "ListHelper.filterCyclicFromSplit"
-            [ fuzz (list int) "filter while preserving cyclic runs" <|
+            [ fuzz (list int) "filters while preserving cyclic runs" <|
                 \list ->
                     ListHelpers.splitWhen (\a -> not (pred a)) list
                         |> (\( lead, trail ) -> (trail ++ lead))
