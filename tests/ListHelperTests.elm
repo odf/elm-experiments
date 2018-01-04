@@ -17,12 +17,12 @@ mapHead fn default list =
             fn x
 
 
-firstAppearanceOrderMatches :
+expectMatchingFirstAppearanceOrders :
     Set comparable
     -> List comparable
     -> List comparable
     -> Expectation
-firstAppearanceOrderMatches seen listA listB =
+expectMatchingFirstAppearanceOrders seen listA listB =
     let
         seenFirst list =
             mapHead (\x -> Set.member x seen) False list
@@ -33,16 +33,21 @@ firstAppearanceOrderMatches seen listA listB =
         if List.isEmpty listA && List.isEmpty listB then
             Expect.pass
         else if seenFirst listA then
-            firstAppearanceOrderMatches seen (List.drop 1 listA) listB
+            expectMatchingFirstAppearanceOrders seen (List.drop 1 listA) listB
         else if seenFirst listB then
-            firstAppearanceOrderMatches seen listA (List.drop 1 listB)
+            expectMatchingFirstAppearanceOrders seen listA (List.drop 1 listB)
         else if List.head listA == List.head listB then
-            firstAppearanceOrderMatches
+            expectMatchingFirstAppearanceOrders
                 (rememberFirst listA)
                 (List.drop 1 listA)
                 (List.drop 1 listB)
         else
             Expect.fail "expected order of first appearances to match"
+
+
+predicate : Int -> Bool
+predicate n =
+    n % 3 == 0
 
 
 suite : Test
@@ -62,13 +67,31 @@ suite =
                     in
                         List.map2 (,) squashed (List.drop 1 squashed)
                             |> List.filter (\( a, b ) -> a == b)
-                            |> List.length
-                            |> Expect.equal 0
+                            |> Expect.equalLists []
             , fuzz (list int) "preserves order" <|
                 \list ->
-                    firstAppearanceOrderMatches
+                    expectMatchingFirstAppearanceOrders
                         Set.empty
                         list
                         (ListHelpers.unique list)
+            ]
+        , describe "ListHelper.splitWhen"
+            [ fuzz (list int) "sublists rejoin to original list" <|
+                \list ->
+                    ListHelpers.splitWhen predicate list
+                        |> (\( lead, trail ) -> (lead ++ trail))
+                        |> Expect.equalLists list
+            , fuzz (list int) "first sublist elements fail predicate" <|
+                \list ->
+                    ListHelpers.splitWhen predicate list
+                        |> (\( lead, trail ) -> lead)
+                        |> List.filter predicate
+                        |> Expect.equalLists []
+            , fuzz (list int) "second sublist head passes predicate" <|
+                \list ->
+                    ListHelpers.splitWhen predicate list
+                        |> (\( lead, trail ) -> trail)
+                        |> mapHead predicate True
+                        |> Expect.true "expected to pass predicate"
             ]
         ]
