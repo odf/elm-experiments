@@ -45,8 +45,8 @@ expectMatchingFirstAppearanceOrders seen listA listB =
             Expect.fail "expected order of first appearances to match"
 
 
-predicate : Int -> Bool
-predicate n =
+pred : Int -> Bool
+pred n =
     n % 3 == 0
 
 
@@ -61,13 +61,11 @@ suite =
                         (Set.fromList <| ListHelpers.unique list)
             , fuzz (list int) "removes duplicates" <|
                 \list ->
-                    let
-                        squashed =
-                            List.sort <| ListHelpers.unique list
-                    in
-                        List.map2 (,) squashed (List.drop 1 squashed)
-                            |> List.filter (\( a, b ) -> a == b)
-                            |> Expect.equalLists []
+                    ListHelpers.unique list
+                        |> List.sort
+                        |> (\xs -> List.map2 (,) xs (List.drop 1 xs))
+                        |> List.filter (\( a, b ) -> a == b)
+                        |> Expect.equalLists []
             , fuzz (list int) "preserves order" <|
                 \list ->
                     expectMatchingFirstAppearanceOrders
@@ -78,20 +76,32 @@ suite =
         , describe "ListHelper.splitWhen"
             [ fuzz (list int) "sublists rejoin to original list" <|
                 \list ->
-                    ListHelpers.splitWhen predicate list
+                    ListHelpers.splitWhen pred list
                         |> (\( lead, trail ) -> (lead ++ trail))
                         |> Expect.equalLists list
-            , fuzz (list int) "first sublist elements fail predicate" <|
+            , fuzz (list int) "first sublist members fail predicate" <|
                 \list ->
-                    ListHelpers.splitWhen predicate list
+                    ListHelpers.splitWhen pred list
                         |> (\( lead, trail ) -> lead)
-                        |> List.filter predicate
+                        |> List.filter pred
                         |> Expect.equalLists []
             , fuzz (list int) "second sublist head passes predicate" <|
                 \list ->
-                    ListHelpers.splitWhen predicate list
+                    ListHelpers.splitWhen pred list
                         |> (\( lead, trail ) -> trail)
-                        |> mapHead predicate True
+                        |> mapHead pred True
                         |> Expect.true "expected to pass predicate"
+            ]
+        , describe "ListHelper.filterCyclicFromSplit"
+            [ fuzz (list int) "filter while preserving cyclic runs" <|
+                \list ->
+                    ListHelpers.splitWhen (\a -> not (pred a)) list
+                        |> (\( lead, trail ) -> (trail ++ lead))
+                        |> List.filter pred
+                        |> Expect.equalLists
+                            (ListHelpers.filterCyclicFromSplit
+                                pred
+                                list
+                            )
             ]
         ]

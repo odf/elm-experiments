@@ -44,8 +44,6 @@ splitWhen pred aList =
 
 filterCyclicFromSplit : (a -> Bool) -> List a -> List a
 filterCyclicFromSplit pred aList =
-    let
-        ( leading, trailing ) =
-            splitWhen (\a -> not (pred a)) aList
-    in
-        List.filter pred (trailing ++ leading)
+    splitWhen (\a -> not (pred a)) aList
+        |> (\( lead, trail ) -> (trail ++ lead))
+        |> List.filter pred
