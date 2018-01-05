@@ -71,23 +71,20 @@ testsForUnique =
     ]
 
 
-testsForSplitWhen : List Test
-testsForSplitWhen =
-    [ fuzz (list int) "sublists rejoin to original list" <|
+testsForIndexWhen : List Test
+testsForIndexWhen =
+    [ fuzz (list int) "earlier list members fail predicate" <|
         \list ->
-            ListHelpers.splitWhen pred list
-                |> (\( lead, trail ) -> (lead ++ trail))
-                |> Expect.equalLists list
-    , fuzz (list int) "first sublist members fail predicate" <|
-        \list ->
-            ListHelpers.splitWhen pred list
-                |> (\( lead, trail ) -> lead)
+            ListHelpers.indexWhen pred list
+                |> Maybe.withDefault (List.length list)
+                |> (\n -> List.take n list)
                 |> List.filter pred
                 |> Expect.equalLists []
-    , fuzz (list int) "second sublist head passes predicate" <|
+    , fuzz (list int) "list at determined index passes predicate" <|
         \list ->
-            ListHelpers.splitWhen pred list
-                |> (\( lead, trail ) -> trail)
+            ListHelpers.indexWhen pred list
+                |> Maybe.withDefault (List.length list)
+                |> (\n -> List.drop n list)
                 |> mapHead pred True
                 |> Expect.true "expected to pass predicate"
     ]
@@ -97,8 +94,9 @@ testsForFilterCyclicFromSplit : List Test
 testsForFilterCyclicFromSplit =
     [ fuzz (list int) "filters while preserving cyclic runs" <|
         \list ->
-            ListHelpers.splitWhen (\a -> not (pred a)) list
-                |> (\( lead, trail ) -> (trail ++ lead))
+            ListHelpers.indexWhen (\a -> not (pred a)) list
+                |> Maybe.withDefault (List.length list)
+                |> (\n -> (List.drop n list) ++ (List.take n list))
                 |> List.filter pred
                 |> Expect.equalLists
                     (ListHelpers.filterCyclicFromSplit pred list)
@@ -110,8 +108,8 @@ suite =
     describe "The ListHelpers module"
         [ describe "ListHelpers.unique"
             testsForUnique
-        , describe "ListHelpers.splitWhen"
-            testsForSplitWhen
+        , describe "ListHelpers.indexWhen"
+            testsForIndexWhen
         , describe "ListHelpers.filterCyclicFromSplit"
             testsForFilterCyclicFromSplit
         ]

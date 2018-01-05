@@ -1,7 +1,7 @@
 module ListHelpers
     exposing
         ( unique
-        , splitWhen
+        , indexWhen
         , filterCyclicFromSplit
         )
 
@@ -25,25 +25,26 @@ unique aList =
         step (Set.empty) aList []
 
 
-splitWhen : (a -> Bool) -> List a -> ( List a, List a )
-splitWhen pred aList =
+indexWhen : (a -> Bool) -> List a -> Maybe Int
+indexWhen pred aList =
     let
-        step leading remaining =
+        step n remaining =
             case remaining of
                 [] ->
-                    ( List.reverse leading, [] )
+                    Nothing
 
                 a :: rest ->
                     if pred a then
-                        ( List.reverse leading, remaining )
+                        Just n
                     else
-                        step (a :: leading) rest
+                        step (n + 1) rest
     in
-        step [] aList
+        step 0 aList
 
 
 filterCyclicFromSplit : (a -> Bool) -> List a -> List a
 filterCyclicFromSplit pred aList =
-    splitWhen (\a -> not (pred a)) aList
-        |> (\( lead, trail ) -> (trail ++ lead))
+    indexWhen (\a -> not (pred a)) aList
+        |> Maybe.withDefault (List.length aList)
+        |> (\n -> (List.drop n aList) ++ (List.take n aList))
         |> List.filter pred
