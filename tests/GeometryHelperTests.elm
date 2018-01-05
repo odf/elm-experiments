@@ -19,6 +19,21 @@ expectWithin tolerance x y =
         Expect.within tolerance x y
 
 
+expectAlmostEqual : Float -> Float -> Expectation
+expectAlmostEqual =
+    expectWithin (Expect.Relative 1.0e-14)
+
+
+expectNaN : Float -> Expectation
+expectNaN x =
+    Expect.true "expected not-a-number" (isNaN x)
+
+
+expectInf : Float -> Expectation
+expectInf x =
+    Expect.true "expected infinity" (isInfinite x)
+
+
 testsForDiv : List Test
 testsForDiv =
     [ fuzz2 int int "computes the correct quotient" <|
@@ -29,14 +44,11 @@ testsForDiv =
             in
                 if b == 0 then
                     if a == 0 then
-                        Expect.true "expected not-a-number" (isNaN q)
+                        expectNaN q
                     else
-                        Expect.true "expected infinity" (isInfinite q)
+                        expectInf q
                 else
-                    expectWithin
-                        (Expect.Relative 1.0e-14)
-                        (toFloat a)
-                        (q * (toFloat b))
+                    expectAlmostEqual (toFloat a) (q * (toFloat b))
     ]
 
 
@@ -49,10 +61,9 @@ testsForAverage =
                     GeometryHelpers.average list
             in
                 if List.isEmpty list then
-                    Expect.true "expected not-a-number" (isNaN avg)
+                    expectNaN avg
                 else
-                    expectWithin
-                        (Expect.Relative 1.0e-14)
+                    expectAlmostEqual
                         (List.sum list)
                         (avg * (toFloat (List.length list)))
     ]
