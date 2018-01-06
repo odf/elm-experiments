@@ -3,7 +3,6 @@ module GraphGen
         ( tetrahedron
         )
 
-import ListHelpers
 import SurfaceGraph exposing (..)
 
 
@@ -33,18 +32,6 @@ nextCyclic a aList =
             Just b
 
 
-replaceAll : a -> a -> List a -> List a
-replaceAll a b aList =
-    List.map
-        (\x ->
-            if x == a then
-                b
-            else
-                x
-        )
-        aList
-
-
 nextAtVertex : Int -> Int -> Graph -> Maybe Int
 nextAtVertex v w gr =
     nextCyclic w <| neighbors v gr
@@ -71,5 +58,6 @@ add3Vertex v w gr =
             addVertex [ u, v, w ] gr
 
 
+dummy : Graph
 dummy =
     Debug.log "test" <| add3Vertex 0 1 tetrahedron
