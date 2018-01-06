@@ -44,7 +44,7 @@ limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
 limitDisplacement limit vNew vOld =
     let
         dist =
-            Vec3.distanceSquared vNew vOld
+            Vec3.distance vNew vOld
     in
         if dist > limit then
             Vec3.add
