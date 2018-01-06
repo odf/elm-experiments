@@ -15,6 +15,11 @@ vec3 =
     Fuzz.map3 Vec3.vec3 float float float
 
 
+anglePair : Fuzzer ( Float, Float )
+anglePair =
+    Fuzz.map2 (,) (floatRange 0 (2 * pi)) (floatRange 0 pi)
+
+
 
 -- custom expectations
 
@@ -149,6 +154,31 @@ testsForNgonAngles =
     ]
 
 
+testsForPointOnSphere : List Test
+testsForPointOnSphere =
+    [ fuzz anglePair "creates a vector of length 1" <|
+        \( phi, theta ) ->
+            GeometryHelpers.pointOnSphere phi theta
+                |> Vec3.length
+                |> expectAlmostEqual 1.0
+    , fuzz anglePair "creates a vector at angle theta to z-axis" <|
+        \( phi, theta ) ->
+            GeometryHelpers.pointOnSphere phi theta
+                |> Vec3.dot (Vec3.vec3 0 0 1)
+                |> expectAlmostEqual (cos theta)
+    , fuzz anglePair "xy-plane projection angle with x-axis is phi" <|
+        \( phi, theta ) ->
+            if abs (sin theta) > 1.0e-14 then
+                GeometryHelpers.pointOnSphere phi theta
+                    |> Vec3.setZ 0
+                    |> Vec3.normalize
+                    |> Vec3.dot (Vec3.vec3 1 0 0)
+                    |> expectAlmostEqual (cos phi)
+            else
+                Expect.pass
+    ]
+
+
 
 -- the main test suite
 
@@ -156,8 +186,14 @@ testsForNgonAngles =
 suite : Test
 suite =
     describe "The GeometryHelpers module"
-        [ describe "GeometryHelpers.div" testsForDiv
-        , describe "GeometryHelpers.average" testsForAverage
-        , describe "GeometryHelpers.center" testsForCenter
-        , describe "GeometryHelpers.ngonAngles" testsForNgonAngles
+        [ describe "GeometryHelpers.div"
+            testsForDiv
+        , describe "GeometryHelpers.average"
+            testsForAverage
+        , describe "GeometryHelpers.center"
+            testsForCenter
+        , describe "GeometryHelpers.ngonAngles"
+            testsForNgonAngles
+        , describe "GeometryHelpers.pointOnSphere"
+            testsForPointOnSphere
         ]
