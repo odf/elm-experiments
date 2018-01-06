@@ -2,7 +2,7 @@ module GeometryHelperTests exposing (suite)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (..)
-import Test exposing (Test, describe, fuzz, fuzz2)
+import Test exposing (..)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import GeometryHelpers
 
@@ -12,7 +12,11 @@ import GeometryHelpers
 
 vec3 : Fuzzer Vec3
 vec3 =
-    Fuzz.map3 Vec3.vec3 float float float
+    let
+        f =
+            floatRange -5 5
+    in
+        Fuzz.map3 Vec3.vec3 f f f
 
 
 anglePair : Fuzzer ( Float, Float )
@@ -179,6 +183,36 @@ testsForPointOnSphere =
     ]
 
 
+testsForLimitDisplacement : List Test
+testsForLimitDisplacement =
+    [ fuzz3
+        (floatRange 1.0e-10 1)
+        vec3
+        vec3
+        "reduces the distance as specified"
+      <|
+        \limit vNew vOld ->
+            GeometryHelpers.limitDisplacement limit vNew vOld
+                |> Vec3.distance vOld
+                |> Expect.atMost (limit * (1 + 1.0e-5))
+    , fuzz3
+        (floatRange 1.0e-10 1)
+        vec3
+        vec3
+        "keeps the direction between reference and subject vector"
+      <|
+        \limit vNew vOld ->
+            if Vec3.distance vOld vNew > 1.0e-14 then
+                GeometryHelpers.limitDisplacement limit vNew vOld
+                    |> Vec3.sub vOld
+                    |> Vec3.normalize
+                    |> Vec3.dot (Vec3.normalize (Vec3.sub vOld vNew))
+                    |> expectWithin (Expect.Relative 1.0e-10) 1
+            else
+                Expect.pass
+    ]
+
+
 
 -- the main test suite
 
@@ -196,4 +230,6 @@ suite =
             testsForNgonAngles
         , describe "GeometryHelpers.pointOnSphere"
             testsForPointOnSphere
+        , describe "GeometryHelpers.limitDisplacement"
+            testsForLimitDisplacement
         ]

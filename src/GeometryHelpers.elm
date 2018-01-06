@@ -42,13 +42,8 @@ pointOnSphere phi theta =
 
 limitDisplacement : Float -> Vec3 -> Vec3 -> Vec3
 limitDisplacement limit vNew vOld =
-    let
-        dist =
-            Vec3.distance vNew vOld
-    in
-        if dist > limit then
-            Vec3.add
-                vOld
-                (Vec3.scale (limit / dist) (Vec3.sub vNew vOld))
-        else
-            vNew
+    if Vec3.distance vNew vOld > limit then
+        Vec3.scale limit (Vec3.normalize (Vec3.sub vNew vOld))
+            |> Vec3.add vOld
+    else
+        vNew
