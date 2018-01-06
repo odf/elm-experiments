@@ -3,6 +3,8 @@ module ListHelpers
         ( unique
         , indexWhen
         , filterCyclicFromSplit
+        , cycle
+        , insertBefore
         )
 
 import Set exposing (Set)
@@ -48,3 +50,15 @@ filterCyclicFromSplit pred aList =
         |> Maybe.withDefault (List.length aList)
         |> (\n -> (List.drop n aList) ++ (List.take n aList))
         |> List.filter pred
+
+
+insertBefore : a -> a -> List a -> List a
+insertBefore a b aList =
+    indexWhen ((==) a) aList
+        |> Maybe.withDefault 0
+        |> (\n -> (List.take n aList) ++ [ b ] ++ (List.drop n aList))
+
+
+cycle : Int -> List a -> List a
+cycle n aList =
+    (List.drop n aList) ++ (List.take n aList)

@@ -6,6 +6,7 @@ module SurfaceGraph
         , nrVertices
         , edges
         , verticesByDistance
+        , addVertex
         )
 
 import Array exposing (Array)
@@ -67,3 +68,24 @@ verticesByDistance start adj =
                         (next :: layers)
     in
         List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
+
+
+insertBefore : a -> a -> List a -> List a
+insertBefore a b aList =
+    ListHelpers.indexWhen ((==) a) aList
+        |> Maybe.withDefault 0
+        |> (\n -> (List.take n aList) ++ [ b ] ++ (List.drop n aList))
+
+
+addVertex : List Int -> Graph -> Graph
+addVertex nbs ((Graph adj) as gr) =
+    let
+        insert u v =
+            ListHelpers.insertBefore u (nrVertices gr) (neighbors v gr)
+    in
+        List.foldl
+            (\( u, v ) -> Array.set v (insert u v))
+            adj
+            (List.map2 (,) nbs (ListHelpers.cycle 1 nbs))
+            |> Array.push nbs
+            |> Graph
