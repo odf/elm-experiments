@@ -1,7 +1,7 @@
 module GeometryHelperTests exposing (suite)
 
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, float, list)
+import Fuzz exposing (..)
 import Test exposing (Test, describe, fuzz, fuzz2)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import GeometryHelpers
@@ -131,6 +131,24 @@ testsForCenter =
     ]
 
 
+testsForNgonAngles : List Test
+testsForNgonAngles =
+    [ fuzz (intRange 0 50) "creates a list of the given length" <|
+        \n ->
+            GeometryHelpers.ngonAngles n
+                |> List.length
+                |> Expect.equal n
+    , fuzz (intRange 0 50) "increments entries by 2 * pi / n" <|
+        \n ->
+            GeometryHelpers.ngonAngles n
+                |> (\xs -> List.map2 (-) (List.drop 1 xs) xs)
+                |> List.map (\x -> abs (x - 2 * pi / (toFloat n)))
+                |> List.maximum
+                |> Maybe.withDefault 0
+                |> Expect.lessThan 1.0e-14
+    ]
+
+
 
 -- the main test suite
 
@@ -141,4 +159,5 @@ suite =
         [ describe "GeometryHelpers.div" testsForDiv
         , describe "GeometryHelpers.average" testsForAverage
         , describe "GeometryHelpers.center" testsForCenter
+        , describe "GeometryHelpers.ngonAngles" testsForNgonAngles
         ]
