@@ -3,43 +3,8 @@ module GraphGen
         ( tetrahedron
         )
 
+import ListHelpers
 import SurfaceGraph exposing (..)
-
-
-tailFrom : a -> List a -> List a
-tailFrom a aList =
-    case aList of
-        [] ->
-            []
-
-        x :: rest ->
-            if x == a then
-                aList
-            else
-                tailFrom a rest
-
-
-nextCyclic : a -> List a -> Maybe a
-nextCyclic a aList =
-    case tailFrom a aList of
-        [] ->
-            Nothing
-
-        a :: [] ->
-            List.head aList
-
-        a :: b :: _ ->
-            Just b
-
-
-nextAtVertex : Int -> Int -> Graph -> Maybe Int
-nextAtVertex v w gr =
-    nextCyclic w <| neighbors v gr
-
-
-nextAtFace : Int -> Int -> Graph -> Maybe Int
-nextAtFace v w gr =
-    nextCyclic v <| List.reverse <| neighbors w gr
 
 
 tetrahedron : Graph
@@ -48,16 +13,40 @@ tetrahedron =
         [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
 
 
-add3Vertex : Int -> Int -> Graph -> Graph
-add3Vertex v w gr =
-    case nextAtVertex v w gr of
+neighborsFrom : Int -> Int -> Int -> Graph -> Maybe (List Int)
+neighborsFrom m v w gr =
+    let
+        nbs =
+            neighbors v gr
+
+        grabFrom i =
+            List.take m (ListHelpers.cycle i nbs)
+    in
+        if List.length nbs < m then
+            Nothing
+        else
+            ListHelpers.indexWhen ((==) w) nbs |> Maybe.map grabFrom
+
+
+addNVertex : Int -> Int -> Int -> Graph -> Graph
+addNVertex n v w gr =
+    case neighborsFrom (n - 1) v w gr of
         Nothing ->
             gr
 
-        Just u ->
-            addVertex [ u, v, w ] gr
+        Just vs ->
+            let
+                inner =
+                    vs |> List.drop 1 |> List.take (n - 3)
+            in
+                List.foldl (\u -> removeEdge v u) gr inner
+                    |> addVertex ([ v ] ++ vs)
 
 
 dummy : Graph
 dummy =
-    Debug.log "test" <| add3Vertex 0 1 tetrahedron
+    tetrahedron
+        |> addNVertex 3 0 1
+        |> addNVertex 5 0 1
+        |> removeEdge 0 1
+        |> Debug.log "test"
