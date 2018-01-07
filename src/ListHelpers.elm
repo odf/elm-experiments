@@ -5,7 +5,6 @@ module ListHelpers
         , unique
         , indexWhen
         , filterCyclicFromSplit
-        , insertBefore
         )
 
 import Set exposing (Set)
@@ -61,10 +60,3 @@ filterCyclicFromSplit pred aList =
         |> Maybe.withDefault 0
         |> (\n -> cycle n aList)
         |> List.filter pred
-
-
-insertBefore : a -> a -> List a -> List a
-insertBefore a b aList =
-    indexWhen ((==) a) aList
-        |> Maybe.withDefault 0
-        |> (\n -> insertAt n b aList)

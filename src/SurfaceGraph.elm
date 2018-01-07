@@ -71,11 +71,18 @@ verticesByDistance start adj =
         List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
 
 
+insertBefore : a -> a -> List a -> List a
+insertBefore a b aList =
+    ListHelpers.indexWhen ((==) a) aList
+        |> Maybe.withDefault 0
+        |> (\n -> ListHelpers.insertAt n b aList)
+
+
 addVertex : List Int -> Graph -> Graph
 addVertex nbs ((Graph adj) as gr) =
     let
         insert u v =
-            ListHelpers.insertBefore u (nrVertices gr) (neighbors v gr)
+            insertBefore u (nrVertices gr) (neighbors v gr)
     in
         List.map2 (,) nbs (ListHelpers.cycle 1 nbs)
             |> List.foldl (\( u, v ) -> Array.set v (insert u v)) adj
