@@ -54,29 +54,32 @@ testsForInsertAt : List Test
 testsForInsertAt =
     [ fuzz3 int int (list int) "preserves the earlier elements" <|
         \n a list ->
-            if n <= List.length list then
-                Expect.equalLists
-                    (List.take n list)
-                    (List.take n (ListHelpers.insertAt n a list))
-            else
-                Expect.pass
+            let
+                m =
+                    min n (List.length list)
+            in
+                ListHelpers.insertAt n a list
+                    |> List.take m
+                    |> Expect.equalLists (List.take m list)
     , fuzz3 int int (list int) "preserves the later elements" <|
         \n a list ->
-            if 0 <= n then
-                Expect.equalLists
-                    (List.drop n list)
-                    (List.drop (n + 1) (ListHelpers.insertAt n a list))
-            else
-                Expect.pass
+            let
+                m =
+                    max n 0
+            in
+                ListHelpers.insertAt n a list
+                    |> List.drop (m + 1)
+                    |> Expect.equalLists (List.drop m list)
     , fuzz3 int int (list int) "puts the element at the position" <|
         \n a list ->
-            if 0 <= n && n <= List.length list then
+            let
+                m =
+                    n |> max 0 |> min (List.length list)
+            in
                 ListHelpers.insertAt n a list
-                    |> List.drop n
+                    |> List.drop m
                     |> List.head
                     |> Expect.equal (Just a)
-            else
-                Expect.pass
     ]
 
 
