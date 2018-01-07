@@ -45,6 +45,7 @@ addNVertex n v w gr =
 
 dummy : Graph
 dummy =
+    -- [[5,3],[4,5,3,2],[5,4,1,3],[0,5,2,1],[5,1,2],[0,1,4,2,3]]
     tetrahedron
         |> addNVertex 3 0 1
         |> addNVertex 5 0 1

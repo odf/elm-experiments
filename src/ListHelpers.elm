@@ -10,6 +10,16 @@ module ListHelpers
 import Set exposing (Set)
 
 
+insertAt : Int -> a -> List a -> List a
+insertAt n a aList =
+    (List.take n aList) ++ [ a ] ++ (List.drop n aList)
+
+
+cycle : Int -> List a -> List a
+cycle n aList =
+    (List.drop n aList) ++ (List.take n aList)
+
+
 unique : List comparable -> List comparable
 unique aList =
     let
@@ -46,9 +56,9 @@ indexWhen pred aList =
 
 filterCyclicFromSplit : (a -> Bool) -> List a -> List a
 filterCyclicFromSplit pred aList =
-    indexWhen (\a -> not (pred a)) aList
-        |> Maybe.withDefault (List.length aList)
-        |> (\n -> (List.drop n aList) ++ (List.take n aList))
+    indexWhen (not << pred) aList
+        |> Maybe.withDefault 0
+        |> (\n -> cycle n aList)
         |> List.filter pred
 
 
@@ -56,9 +66,4 @@ insertBefore : a -> a -> List a -> List a
 insertBefore a b aList =
     indexWhen ((==) a) aList
         |> Maybe.withDefault 0
-        |> (\n -> (List.take n aList) ++ [ b ] ++ (List.drop n aList))
-
-
-cycle : Int -> List a -> List a
-cycle n aList =
-    (List.drop n aList) ++ (List.take n aList)
+        |> (\n -> insertAt n b aList)
