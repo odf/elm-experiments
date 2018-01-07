@@ -7,6 +7,7 @@ module SurfaceGraph
         , edges
         , verticesByDistance
         , addVertex
+        , removeEdge
         )
 
 import Array exposing (Array)
