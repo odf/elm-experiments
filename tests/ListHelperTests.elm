@@ -2,7 +2,7 @@ module ListHelperTests exposing (suite)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (int, list)
-import Test exposing (Test, describe, fuzz)
+import Test exposing (..)
 import Set exposing (Set)
 import ListHelpers
 
@@ -48,6 +48,36 @@ expectMatchingFirsts seen listA listB =
 pred : Int -> Bool
 pred n =
     n % 3 == 0
+
+
+testsForInsertAt : List Test
+testsForInsertAt =
+    [ fuzz3 int int (list int) "preserves the earlier elements" <|
+        \n a list ->
+            if n <= List.length list then
+                Expect.equalLists
+                    (List.take n list)
+                    (List.take n (ListHelpers.insertAt n a list))
+            else
+                Expect.pass
+    , fuzz3 int int (list int) "preserves the later elements" <|
+        \n a list ->
+            if 0 <= n then
+                Expect.equalLists
+                    (List.drop n list)
+                    (List.drop (n + 1) (ListHelpers.insertAt n a list))
+            else
+                Expect.pass
+    , fuzz3 int int (list int) "puts the element at the position" <|
+        \n a list ->
+            if 0 <= n && n <= List.length list then
+                ListHelpers.insertAt n a list
+                    |> List.drop n
+                    |> List.head
+                    |> Expect.equal (Just a)
+            else
+                Expect.pass
+    ]
 
 
 testsForUnique : List Test
@@ -106,7 +136,9 @@ testsForFilterCyclicFromSplit =
 suite : Test
 suite =
     describe "The ListHelpers module"
-        [ describe "ListHelpers.unique"
+        [ describe "ListHelpers.insertAt"
+            testsForInsertAt
+        , describe "ListHelpers.unique"
             testsForUnique
         , describe "ListHelpers.indexWhen"
             testsForIndexWhen

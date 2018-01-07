@@ -1,9 +1,10 @@
 module ListHelpers
     exposing
-        ( unique
+        ( insertAt
+        , cycle
+        , unique
         , indexWhen
         , filterCyclicFromSplit
-        , cycle
         , insertBefore
         )
 
