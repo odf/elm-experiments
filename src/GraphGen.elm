@@ -1,6 +1,7 @@
 module GraphGen
     exposing
         ( tetrahedron
+        , addNVertex
         )
 
 import ListHelpers
@@ -35,19 +36,6 @@ addNVertex n v w gr =
             gr
 
         Just vs ->
-            let
-                inner =
-                    vs |> List.drop 1 |> List.take (n - 3)
-            in
-                List.foldl (\u -> removeEdge v u) gr inner
-                    |> addVertex ([ v ] ++ vs)
-
-
-dummy : Graph
-dummy =
-    -- [[5,3],[4,5,3,2],[5,4,1,3],[0,5,2,1],[5,1,2],[0,1,4,2,3]]
-    tetrahedron
-        |> addNVertex 3 0 1
-        |> addNVertex 5 0 1
-        |> removeEdge 0 1
-        |> Debug.log "test"
+            List.take (n - 3) (List.drop 1 vs)
+                |> List.foldl (\u -> removeEdge v u) gr
+                |> addVertex ([ v ] ++ vs)
