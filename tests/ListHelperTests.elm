@@ -83,6 +83,26 @@ testsForInsertAt =
     ]
 
 
+testsForCycle : List Test
+testsForCycle =
+    [ fuzz2 int (list int) "preserves the length of the list" <|
+        \n list ->
+            ListHelpers.cycle n list
+                |> List.length
+                |> Expect.equal (List.length list)
+    , fuzz2 int (list int) "puts later elements at the front" <|
+        \n list ->
+            ListHelpers.cycle n list
+                |> List.take (List.length list - n)
+                |> Expect.equal (List.drop n list)
+    , fuzz2 int (list int) "puts earlier elements at the end" <|
+        \n list ->
+            ListHelpers.cycle n list
+                |> List.drop (List.length list - n)
+                |> Expect.equal (List.take n list)
+    ]
+
+
 testsForUnique : List Test
 testsForUnique =
     [ fuzz (list int) "preserves the set of elements" <|
@@ -141,6 +161,8 @@ suite =
     describe "The ListHelpers module"
         [ describe "ListHelpers.insertAt"
             testsForInsertAt
+        , describe "ListHelpers.cycle"
+            testsForCycle
         , describe "ListHelpers.unique"
             testsForUnique
         , describe "ListHelpers.indexWhen"
