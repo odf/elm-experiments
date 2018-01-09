@@ -2,6 +2,7 @@ module GraphGen
     exposing
         ( tetrahedron
         , addNVertex
+        , grow
         )
 
 import ListHelpers
@@ -39,3 +40,20 @@ addNVertex n v w gr =
             List.take (n - 3) (List.drop 1 vs)
                 |> List.foldl (\u -> removeEdge v u) gr
                 |> addVertex ([ v ] ++ vs)
+
+
+pick : Int -> List a -> Maybe a
+pick i es =
+    List.drop (i % List.length es) es |> List.head
+
+
+grow : Int -> Int -> Graph -> Graph
+grow a b gr =
+    let
+        ( v, w ) =
+            directedEdges gr |> pick a |> Maybe.withDefault ( 0, 0 )
+
+        n =
+            b % (min (degree v gr - 1) 3) + 3
+    in
+        addNVertex n v w gr
