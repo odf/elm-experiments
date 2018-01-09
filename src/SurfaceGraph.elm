@@ -3,6 +3,7 @@ module SurfaceGraph
         ( Graph
         , graph
         , neighbors
+        , degree
         , nrVertices
         , directedEdges
         , edges
@@ -33,6 +34,11 @@ graph =
 neighbors : Int -> Graph -> List Int
 neighbors v (Graph adj) =
     Maybe.withDefault [] (Array.get v adj)
+
+
+degree : Int -> Graph -> Int
+degree v =
+    neighbors v >> List.length
 
 
 nrVertices : Graph -> Int
