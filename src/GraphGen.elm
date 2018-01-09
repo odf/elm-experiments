@@ -3,6 +3,7 @@ module GraphGen
         ( tetrahedron
         , addNVertex
         , grow
+        , shrink
         )
 
 import ListHelpers
@@ -49,11 +50,31 @@ pick i es =
 
 grow : Int -> Int -> Graph -> Graph
 grow a b gr =
-    let
-        ( v, w ) =
-            directedEdges gr |> pick a |> Maybe.withDefault ( 0, 0 )
+    case
+        directedEdges gr
+            |> pick a
+    of
+        Nothing ->
+            gr
 
-        n =
-            b % (min (degree v gr - 1) 3) + 3
-    in
-        addNVertex n v w gr
+        Just ( v, w ) ->
+            let
+                k =
+                    min (degree v gr - 1) 3
+            in
+                addNVertex (b % k + 3) v w gr
+
+
+shrink : Int -> Graph -> Graph
+shrink a gr =
+    case
+        directedEdges gr
+            |> List.filter (\( v, w ) -> degree v gr > 3)
+            |> List.filter (\( v, w ) -> degree w gr > 3)
+            |> pick a
+    of
+        Nothing ->
+            gr
+
+        Just ( v, w ) ->
+            removeEdge v w gr
