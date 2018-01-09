@@ -2,6 +2,7 @@ module ListHelpers
     exposing
         ( insertAt
         , cycle
+        , sortCyclic
         , unique
         , indexWhen
         , filterCyclicFromSplit
@@ -18,6 +19,14 @@ insertAt n a aList =
 cycle : Int -> List a -> List a
 cycle n aList =
     (List.drop n aList) ++ (List.take n aList)
+
+
+sortCyclic : List comparable -> List comparable
+sortCyclic aList =
+    List.range 0 (List.length aList - 1)
+        |> List.map (\n -> cycle n aList)
+        |> List.minimum
+        |> Maybe.withDefault aList
 
 
 unique : List comparable -> List comparable

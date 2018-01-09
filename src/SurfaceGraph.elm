@@ -19,9 +19,14 @@ type Graph
     = Graph (Array (List Int))
 
 
+makeGraph : Array (List Int) -> Graph
+makeGraph =
+    Array.map ListHelpers.sortCyclic >> Graph
+
+
 graph : List (List Int) -> Graph
 graph =
-    Graph << Array.fromList
+    Array.fromList >> makeGraph
 
 
 neighbors : Int -> Graph -> List Int
@@ -87,7 +92,7 @@ addVertex nbs ((Graph adj) as gr) =
         List.map2 (,) nbs (ListHelpers.cycle 1 nbs)
             |> List.foldl (\( u, v ) -> Array.set v (insert u v)) adj
             |> Array.push nbs
-            |> Graph
+            |> makeGraph
 
 
 removeEdge : Int -> Int -> Graph -> Graph
@@ -95,4 +100,4 @@ removeEdge u v ((Graph adj) as gr) =
     adj
         |> Array.set u (List.filter ((/=) v) (neighbors u gr))
         |> Array.set v (List.filter ((/=) u) (neighbors v gr))
-        |> Graph
+        |> makeGraph

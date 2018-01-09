@@ -17,11 +17,11 @@ suite =
                     |> SurfaceGraph.removeEdge 0 1
                     |> Expect.equal
                         (SurfaceGraph.graph
-                            [ [ 5, 3 ]
-                            , [ 4, 5, 3, 2 ]
-                            , [ 5, 4, 1, 3 ]
+                            [ [ 3, 5 ]
+                            , [ 2, 4, 5, 3 ]
+                            , [ 1, 3, 5, 4 ]
                             , [ 0, 5, 2, 1 ]
-                            , [ 5, 1, 2 ]
+                            , [ 1, 2, 5 ]
                             , [ 0, 1, 4, 2, 3 ]
                             ]
                         )
