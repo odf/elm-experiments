@@ -4,6 +4,7 @@ module SurfaceGraph
         , graph
         , neighbors
         , nrVertices
+        , directedEdges
         , edges
         , verticesByDistance
         , addVertex
@@ -39,15 +40,18 @@ nrVertices (Graph adj) =
     Array.length adj
 
 
-edges : Graph -> List ( Int, Int )
-edges (Graph adj) =
+directedEdges : Graph -> List ( Int, Int )
+directedEdges (Graph adj) =
     let
         incident ( v, nbs ) =
             List.map (\w -> ( v, w )) nbs
     in
-        Array.toIndexedList adj
-            |> List.concatMap incident
-            |> List.filter (\( v, w ) -> v < w)
+        Array.toIndexedList adj |> List.concatMap incident
+
+
+edges : Graph -> List ( Int, Int )
+edges =
+    directedEdges >> List.filter (\( v, w ) -> v < w)
 
 
 verticesByDistance : Int -> Graph -> List (List Int)
