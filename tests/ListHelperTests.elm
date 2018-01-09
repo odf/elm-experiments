@@ -103,6 +103,32 @@ testsForCycle =
     ]
 
 
+testsForSortCyclic : List Test
+testsForSortCyclic =
+    [ fuzz (list int) "preserves the length of the list" <|
+        \list ->
+            ListHelpers.sortCyclic list
+                |> List.length
+                |> Expect.equal (List.length list)
+    , fuzz (list int) "preserves the elements of the list" <|
+        \list ->
+            ListHelpers.sortCyclic list
+                |> List.sort
+                |> Expect.equalLists (List.sort list)
+    , fuzz (list int) "is no larger than its cyclic permutations" <|
+        \list ->
+            let
+                sorted =
+                    ListHelpers.sortCyclic list
+            in
+                List.range 0 (List.length sorted - 1)
+                    |> List.map (\n -> ListHelpers.cycle n sorted)
+                    |> List.all ((<=) sorted)
+                    |> Expect.true
+                        "should have no smaller cyclic permutation"
+    ]
+
+
 testsForUnique : List Test
 testsForUnique =
     [ fuzz (list int) "preserves the set of elements" <|
@@ -163,6 +189,8 @@ suite =
             testsForInsertAt
         , describe "ListHelpers.cycle"
             testsForCycle
+        , describe "ListHelpers.sortCyclic"
+            testsForSortCyclic
         , describe "ListHelpers.unique"
             testsForUnique
         , describe "ListHelpers.indexWhen"
