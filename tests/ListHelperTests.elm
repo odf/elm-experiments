@@ -56,27 +56,27 @@ testsForInsertAt =
         \n a list ->
             let
                 m =
-                    min n (List.length list)
+                    n % max 1 (List.length list)
             in
-                ListHelpers.insertAt n a list
+                ListHelpers.insertAt m a list
                     |> List.take m
                     |> Expect.equalLists (List.take m list)
     , fuzz3 int int (list int) "preserves the later elements" <|
         \n a list ->
             let
                 m =
-                    max n 0
+                    n % max 1 (List.length list)
             in
-                ListHelpers.insertAt n a list
+                ListHelpers.insertAt m a list
                     |> List.drop (m + 1)
                     |> Expect.equalLists (List.drop m list)
     , fuzz3 int int (list int) "puts the element at the position" <|
         \n a list ->
             let
                 m =
-                    n |> max 0 |> min (List.length list)
+                    n % max 1 (List.length list)
             in
-                ListHelpers.insertAt n a list
+                ListHelpers.insertAt m a list
                     |> List.drop m
                     |> List.head
                     |> Expect.equal (Just a)
@@ -87,19 +87,31 @@ testsForCycle : List Test
 testsForCycle =
     [ fuzz2 int (list int) "preserves the length of the list" <|
         \n list ->
-            ListHelpers.cycle n list
-                |> List.length
-                |> Expect.equal (List.length list)
+            let
+                m =
+                    n % max 1 (List.length list)
+            in
+                ListHelpers.cycle m list
+                    |> List.length
+                    |> Expect.equal (List.length list)
     , fuzz2 int (list int) "puts later elements at the front" <|
         \n list ->
-            ListHelpers.cycle n list
-                |> List.take (List.length list - n)
-                |> Expect.equal (List.drop n list)
+            let
+                m =
+                    n % max 1 (List.length list)
+            in
+                ListHelpers.cycle m list
+                    |> List.take (List.length list - m)
+                    |> Expect.equal (List.drop m list)
     , fuzz2 int (list int) "puts earlier elements at the end" <|
         \n list ->
-            ListHelpers.cycle n list
-                |> List.drop (List.length list - n)
-                |> Expect.equal (List.take n list)
+            let
+                m =
+                    n % max 1 (List.length list)
+            in
+                ListHelpers.cycle m list
+                    |> List.drop (List.length list - m)
+                    |> Expect.equal (List.take m list)
     ]
 
 
