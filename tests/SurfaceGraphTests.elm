@@ -3,7 +3,7 @@ module SurfaceGraphTests exposing (suite)
 import Expect
 import Fuzz exposing (..)
 import Test exposing (..)
-import SurfaceGraph exposing (Graph)
+import SurfaceGraph as Graph exposing (Graph)
 import GraphGen
 
 
@@ -28,6 +28,25 @@ graph =
 suite : Test
 suite =
     describe "The SurfaceGraph module"
-        [ fuzz graph "testing random graph generation only" <|
-            \_ -> Expect.pass
+        [ fuzz graph "graph is reconstructed from neighbor lists" <|
+            \gr ->
+                List.range 0 (Graph.nrVertices gr - 1)
+                    |> List.map (\v -> Graph.neighbors v gr)
+                    |> Graph.graph
+                    |> Expect.equal gr
+        , fuzz graph "directed edges come in opposite pairs" <|
+            \gr ->
+                let
+                    es =
+                        Graph.directedEdges gr |> List.sort
+                in
+                    List.map (\( v, w ) -> ( w, v )) es
+                        |> List.sort
+                        |> Expect.equal es
+        , fuzz graph "sum of vertex degrees is twice the edge count" <|
+            \gr ->
+                List.range 0 (Graph.nrVertices gr - 1)
+                    |> List.map (\v -> Graph.degree v gr)
+                    |> List.sum
+                    |> Expect.equal (2 * List.length (Graph.edges gr))
         ]
