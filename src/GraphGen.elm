@@ -4,6 +4,7 @@ module GraphGen
         , addNVertex
         , grow
         , shrink
+        , build
         )
 
 import ListHelpers
@@ -45,7 +46,7 @@ addNVertex n v w gr =
 
 pick : Int -> List a -> Maybe a
 pick i es =
-    List.drop (i % List.length es) es |> List.head
+    List.drop (i % max 1 (List.length es)) es |> List.head
 
 
 grow : Int -> Int -> Graph -> Graph
@@ -78,3 +79,10 @@ shrink a gr =
 
         Just ( v, w ) ->
             removeEdge v w gr
+
+
+build : List ( Int, Int ) -> List Int -> Graph
+build growParms shrinkParms =
+    tetrahedron
+        |> (\gr -> List.foldl (\( a, b ) -> grow a b) gr growParms)
+        |> (\gr -> List.foldl shrink gr shrinkParms)
