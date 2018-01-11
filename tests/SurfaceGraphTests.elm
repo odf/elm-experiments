@@ -76,22 +76,15 @@ testsForVerticesByDistance =
                     |> Expect.equal (Just [ start ])
     , fuzz2 graph int "each vertex is in exactly one layer" <|
         \gr n ->
-            let
-                start =
-                    n % Graph.nrVertices gr
-            in
-                Graph.verticesByDistance start gr
-                    |> List.concat
-                    |> List.sort
-                    |> Expect.equal (List.range 0 (Graph.nrVertices gr - 1))
-    , fuzz2 graph int "adjacent edges should be in same or adjacent layers" <|
+            Graph.verticesByDistance (n % Graph.nrVertices gr) gr
+                |> List.concat
+                |> List.sort
+                |> Expect.equal (List.range 0 (Graph.nrVertices gr - 1))
+    , fuzz2 graph int "adjacent edges should be in equal or adjacent layers" <|
         \gr n ->
             let
-                start =
-                    n % Graph.nrVertices gr
-
                 dists =
-                    distanceMap start gr
+                    distanceMap (n % Graph.nrVertices gr) gr
 
                 good ( v, w ) =
                     Maybe.map2
@@ -104,6 +97,31 @@ testsForVerticesByDistance =
                     |> List.all good
                     |> Expect.true
                         "depth difference along edge should be at most 1"
+    , fuzz2 graph int "each vertex other than start has a lower neighbor" <|
+        \gr n ->
+            let
+                start =
+                    n % Graph.nrVertices gr
+
+                dists =
+                    distanceMap start gr
+
+                good v =
+                    if v == start then
+                        True
+                    else
+                        let
+                            d0 =
+                                Array.get v dists |> Maybe.withDefault 0
+                        in
+                            Graph.neighbors v gr
+                                |> List.filterMap (\w -> Array.get w dists)
+                                |> List.any (\d -> d < d0)
+            in
+                List.range 0 (Graph.nrVertices gr - 1)
+                    |> List.all good
+                    |> Expect.true
+                        "each vertex except start must have a lower neighbor"
     ]
 
 
