@@ -194,6 +194,20 @@ testsForFilterCyclicFromSplit =
     ]
 
 
+testsForPickCyclic : List Test
+testsForPickCyclic =
+    [ fuzz3 int int (list int) "retrieves a newly inserted element correctly" <|
+        \n a aList ->
+            let
+                m =
+                    n % max 1 (List.length aList)
+            in
+                ListHelpers.insertAt m a aList
+                    |> ListHelpers.pickCyclic m
+                    |> Expect.equal (Just a)
+    ]
+
+
 suite : Test
 suite =
     describe "The ListHelpers module"
@@ -209,4 +223,6 @@ suite =
             testsForIndexWhen
         , describe "ListHelpers.filterCyclicFromSplit"
             testsForFilterCyclicFromSplit
+        , describe "ListHelpers.pickCyclic"
+            testsForPickCyclic
         ]

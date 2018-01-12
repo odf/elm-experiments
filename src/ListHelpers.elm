@@ -6,6 +6,7 @@ module ListHelpers
         , unique
         , indexWhen
         , filterCyclicFromSplit
+        , pickCyclic
         )
 
 import Set exposing (Set)
@@ -69,3 +70,8 @@ filterCyclicFromSplit pred aList =
         |> Maybe.withDefault 0
         |> (\n -> cycle n aList)
         |> List.filter pred
+
+
+pickCyclic : Int -> List a -> Maybe a
+pickCyclic i es =
+    List.drop (i % max 1 (List.length es)) es |> List.head

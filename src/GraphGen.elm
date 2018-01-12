@@ -44,16 +44,11 @@ addNVertex n v w gr =
                 |> addVertex ([ v ] ++ vs)
 
 
-pick : Int -> List a -> Maybe a
-pick i es =
-    List.drop (i % max 1 (List.length es)) es |> List.head
-
-
 grow : Int -> Int -> Graph -> Graph
 grow a b gr =
     case
         directedEdges gr
-            |> pick a
+            |> ListHelpers.pickCyclic a
     of
         Nothing ->
             gr
@@ -72,7 +67,7 @@ shrink a gr =
         directedEdges gr
             |> List.filter (\( v, w ) -> degree v gr > 3)
             |> List.filter (\( v, w ) -> degree w gr > 3)
-            |> pick a
+            |> ListHelpers.pickCyclic a
     of
         Nothing ->
             gr
