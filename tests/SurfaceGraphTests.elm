@@ -97,7 +97,7 @@ testsForVerticesByDistance =
                     |> List.all good
                     |> Expect.true
                         "depth difference along edge should be at most 1"
-    , fuzz2 graph int "each vertex other than start has a lower neighbor" <|
+    , fuzz2 graph int "each vertex at a positive level has a lower neighbor" <|
         \gr n ->
             let
                 start =
@@ -106,20 +106,18 @@ testsForVerticesByDistance =
                 dists =
                     distanceMap start gr
 
-                good v =
-                    if v == start then
-                        True
-                    else
-                        let
-                            d0 =
-                                Array.get v dists |> Maybe.withDefault 0
-                        in
-                            Graph.neighbors v gr
-                                |> List.filterMap (\w -> Array.get w dists)
-                                |> List.any (\d -> d < d0)
+                hasLowerNeighbor v =
+                    let
+                        d0 =
+                            Array.get v dists |> Maybe.withDefault 0
+                    in
+                        Graph.neighbors v gr
+                            |> List.filterMap (\w -> Array.get w dists)
+                            |> List.any (\d -> d < d0)
             in
                 List.range 0 (Graph.nrVertices gr - 1)
-                    |> List.all good
+                    |> List.filter ((/=) start)
+                    |> List.all hasLowerNeighbor
                     |> Expect.true
                         "each vertex except start must have a lower neighbor"
     ]
