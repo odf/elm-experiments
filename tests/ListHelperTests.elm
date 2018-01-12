@@ -200,10 +200,10 @@ testsForPickCyclic =
         \n a aList ->
             let
                 m =
-                    n % max 1 (List.length aList)
+                    n % (1 + List.length aList)
             in
                 ListHelpers.insertAt m a aList
-                    |> ListHelpers.pickCyclic m
+                    |> ListHelpers.pickCyclic n
                     |> Expect.equal (Just a)
     ]
 
