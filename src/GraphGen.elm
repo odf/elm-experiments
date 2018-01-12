@@ -41,7 +41,7 @@ addNVertex n v w gr =
         Just vs ->
             List.take (n - 3) (List.drop 1 vs)
                 |> List.foldl (\u -> removeEdge v u) gr
-                |> addVertex ([ v ] ++ vs)
+                |> triangulateFaceFromCenter v w
 
 
 grow : Int -> Int -> Graph -> Graph

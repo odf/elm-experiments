@@ -8,7 +8,9 @@ module SurfaceGraph
         , directedEdges
         , edges
         , verticesByDistance
+        , face
         , addVertex
+        , triangulateFaceFromCenter
         , removeEdge
         )
 
@@ -86,6 +88,29 @@ verticesByDistance start adj =
         List.reverse <| step (Set.fromList [ start ]) [ [ start ] ]
 
 
+cyclicSuccessor : a -> List a -> Maybe a
+cyclicSuccessor a aList =
+    ListHelpers.indexWhen ((==) a) aList
+        |> Maybe.andThen (\i -> ListHelpers.pickCyclic (i + 1) aList)
+
+
+face : Int -> Int -> Graph -> List Int
+face v0 w0 gr =
+    let
+        step v w vs =
+            case cyclicSuccessor w (neighbors v gr) of
+                Nothing ->
+                    []
+
+                Just u ->
+                    if u == v0 then
+                        u :: vs
+                    else
+                        step u v (u :: vs)
+    in
+        step v0 w0 []
+
+
 insertBefore : a -> a -> List a -> List a
 insertBefore a b aList =
     ListHelpers.indexWhen ((==) a) aList
@@ -103,6 +128,11 @@ addVertex nbs ((Graph adj) as gr) =
             |> List.foldl (\( u, v ) -> Array.set v (insert u v)) adj
             |> Array.push nbs
             |> makeGraph
+
+
+triangulateFaceFromCenter : Int -> Int -> Graph -> Graph
+triangulateFaceFromCenter v w gr =
+    addVertex (face v w gr) gr
 
 
 removeEdge : Int -> Int -> Graph -> Graph
