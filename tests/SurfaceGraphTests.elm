@@ -80,24 +80,7 @@ testsForVerticesByDistance =
                 |> List.concat
                 |> List.sort
                 |> Expect.equal (List.range 0 (Graph.nrVertices gr - 1))
-    , fuzz2 graph int "adjacent edges should be in equal or adjacent layers" <|
-        \gr n ->
-            let
-                dists =
-                    distanceMap (n % Graph.nrVertices gr) gr
-
-                good ( v, w ) =
-                    Maybe.map2
-                        (\a b -> abs (a - b) <= 1)
-                        (Array.get v dists)
-                        (Array.get w dists)
-                        |> (==) (Just True)
-            in
-                Graph.edges gr
-                    |> List.all good
-                    |> Expect.true
-                        "depth difference along edge should be at most 1"
-    , fuzz2 graph int "each vertex at a positive level has a lower neighbor" <|
+    , fuzz2 graph int "each positive level vertex has a neighbor one lower" <|
         \gr n ->
             let
                 start =
@@ -106,20 +89,20 @@ testsForVerticesByDistance =
                 dists =
                     distanceMap start gr
 
-                hasLowerNeighbor v =
+                hasNeighborOneLower v =
                     let
                         d0 =
                             Array.get v dists |> Maybe.withDefault 0
                     in
                         Graph.neighbors v gr
                             |> List.filterMap (\w -> Array.get w dists)
-                            |> List.any (\d -> d < d0)
+                            |> List.any ((==) (d0 - 1))
             in
                 List.range 0 (Graph.nrVertices gr - 1)
                     |> List.filter ((/=) start)
-                    |> List.all hasLowerNeighbor
+                    |> List.all hasNeighborOneLower
                     |> Expect.true
-                        "each vertex except start must have a lower neighbor"
+                        "each vertex not start must have a neighbor one lower"
     ]
 
 
