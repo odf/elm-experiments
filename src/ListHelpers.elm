@@ -7,6 +7,7 @@ module ListHelpers
         , indexWhen
         , filterCyclicFromSplit
         , pickCyclic
+        , cyclicPairs
         )
 
 import Set exposing (Set)
@@ -75,3 +76,8 @@ filterCyclicFromSplit pred aList =
 pickCyclic : Int -> List a -> Maybe a
 pickCyclic i es =
     List.drop (i % max 1 (List.length es)) es |> List.head
+
+
+cyclicPairs : List a -> List ( a, a )
+cyclicPairs xs =
+    List.map2 (,) xs (cycle 1 xs)

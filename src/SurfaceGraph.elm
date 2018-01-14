@@ -9,6 +9,7 @@ module SurfaceGraph
         , edges
         , verticesByDistance
         , face
+        , faces
         , addVertex
         , triangulateFaceFromCenter
         , removeEdge
@@ -111,6 +112,31 @@ face v0 w0 gr =
         step v0 w0 []
 
 
+diffLists : List a -> List a -> List a
+diffLists xs ys =
+    List.filter (\x -> not (List.member x ys)) xs
+
+
+faces : Graph -> List (List Int)
+faces gr =
+    let
+        step edgesLeft facesSoFar =
+            case List.head edgesLeft of
+                Nothing ->
+                    List.reverse facesSoFar
+
+                Just ( v, w ) ->
+                    let
+                        f =
+                            face v w gr
+                    in
+                        step
+                            (diffLists edgesLeft (ListHelpers.cyclicPairs f))
+                            (f :: facesSoFar)
+    in
+        step (directedEdges gr) []
+
+
 insertBefore : a -> a -> List a -> List a
 insertBefore a b aList =
     ListHelpers.indexWhen ((==) a) aList
@@ -124,7 +150,7 @@ addVertex nbs ((Graph adj) as gr) =
         insert u v =
             insertBefore u (nrVertices gr) (neighbors v gr)
     in
-        List.map2 (,) nbs (ListHelpers.cycle 1 nbs)
+        ListHelpers.cyclicPairs nbs
             |> List.foldl (\( u, v ) -> Array.set v (insert u v)) adj
             |> Array.push nbs
             |> makeGraph

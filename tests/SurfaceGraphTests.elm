@@ -107,36 +107,12 @@ testsForVerticesByDistance =
     ]
 
 
-faces : Graph -> List (List Int)
-faces gr =
-    let
-        step edgesLeft facesSoFar =
-            case List.head edgesLeft of
-                Nothing ->
-                    List.reverse facesSoFar
-
-                Just ( v, w ) ->
-                    let
-                        f =
-                            Graph.face v w gr
-
-                        es =
-                            List.map2 (,) f (ListHelpers.cycle 1 f)
-
-                        diff xs ys =
-                            List.filter (\x -> not (List.member x ys)) xs
-                    in
-                        step (diff edgesLeft es) (f :: facesSoFar)
-    in
-        step (Graph.directedEdges gr) []
-
-
-testsForFace : List Test
-testsForFace =
+testsForFaces : List Test
+testsForFaces =
     [ fuzz graph "directed edge sets by vertex and by face are the same" <|
         \gr ->
-            faces gr
-                |> List.map (\f -> List.map2 (,) f (ListHelpers.cycle 1 f))
+            Graph.faces gr
+                |> List.map ListHelpers.cyclicPairs
                 |> List.concat
                 |> List.sort
                 |> Expect.equal (List.sort (Graph.directedEdges gr))
@@ -150,6 +126,6 @@ suite =
             generalTests
         , describe "SurfaceGraph.verticesByDistance"
             testsForVerticesByDistance
-        , describe "SurfaceGraph.face"
-            testsForFace
+        , describe "SurfaceGraph.faces"
+            testsForFaces
         ]
