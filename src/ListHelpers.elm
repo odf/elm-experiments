@@ -8,6 +8,8 @@ module ListHelpers
         , filterCyclicFromSplit
         , pickCyclic
         , cyclicPairs
+        , diffLists
+        , intersectLists
         )
 
 import Set exposing (Set)
@@ -81,3 +83,13 @@ pickCyclic i es =
 cyclicPairs : List a -> List ( a, a )
 cyclicPairs xs =
     List.map2 (,) xs (cycle 1 xs)
+
+
+diffLists : List a -> List a -> List a
+diffLists xs ys =
+    List.filter (\x -> not (List.member x ys)) xs
+
+
+intersectLists : List a -> List a -> List a
+intersectLists xs ys =
+    List.filter (\x -> (List.member x ys)) xs

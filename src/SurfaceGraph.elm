@@ -112,11 +112,6 @@ face v0 w0 gr =
         step v0 w0 []
 
 
-diffLists : List a -> List a -> List a
-diffLists xs ys =
-    List.filter (\x -> not (List.member x ys)) xs
-
-
 faces : Graph -> List (List Int)
 faces gr =
     let
@@ -129,10 +124,14 @@ faces gr =
                     let
                         f =
                             face v w gr
+
+                        edgesInF =
+                            ListHelpers.cyclicPairs f
+
+                        es =
+                            ListHelpers.diffLists edgesLeft edgesInF
                     in
-                        step
-                            (diffLists edgesLeft (ListHelpers.cyclicPairs f))
-                            (f :: facesSoFar)
+                        step es (f :: facesSoFar)
     in
         step (directedEdges gr) []
 

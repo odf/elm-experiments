@@ -61,12 +61,21 @@ grow a b gr =
                 addNVertex (b % k + 3) v w gr
 
 
+removableEdge : Int -> Int -> Graph -> Bool
+removableEdge v w gr =
+    (degree v gr > 3)
+        && (degree w gr > 3)
+        && (ListHelpers.intersectLists (face v w gr) (face w v gr)
+                |> List.length
+                |> (==) 2
+           )
+
+
 shrink : Int -> Graph -> Graph
 shrink a gr =
     case
         directedEdges gr
-            |> List.filter (\( v, w ) -> degree v gr > 3)
-            |> List.filter (\( v, w ) -> degree w gr > 3)
+            |> List.filter (\( v, w ) -> removableEdge v w gr)
             |> ListHelpers.pickCyclic a
     of
         Nothing ->
