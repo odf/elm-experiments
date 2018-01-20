@@ -119,6 +119,51 @@ testsForFaces =
     ]
 
 
+testsForTriangulate : List Test
+testsForTriangulate =
+    [ fuzz2 graph int "the modified graph has the expected faces" <|
+        \gr a ->
+            let
+                normalized faces =
+                    faces |> List.map ListHelpers.sortCyclic |> List.sort
+
+                n =
+                    Graph.nrVertices gr
+
+                ( v, w ) =
+                    Graph.directedEdges gr
+                        |> ListHelpers.pickCyclic a
+                        |> Maybe.withDefault ( 0, 0 )
+
+                facesNew =
+                    Graph.triangulateFaceFromCenter v w gr
+                        |> Graph.faces
+                        |> normalized
+
+                facesOld =
+                    Graph.faces gr |> normalized
+
+                deleted =
+                    [ Graph.face v w gr ] |> normalized
+
+                added =
+                    Graph.face v w gr
+                        |> ListHelpers.cyclicPairs
+                        |> List.map (\( v, w ) -> [ v, w, n ])
+                        |> normalized
+            in
+                Expect.all
+                    [ \gr ->
+                        ListHelpers.diffLists facesOld facesNew
+                            |> Expect.equalLists deleted
+                    , \gr ->
+                        ListHelpers.diffLists facesNew facesOld
+                            |> Expect.equalLists added
+                    ]
+                    gr
+    ]
+
+
 suite : Test
 suite =
     describe "The SurfaceGraph module"
@@ -128,4 +173,6 @@ suite =
             testsForVerticesByDistance
         , describe "SurfaceGraph.faces"
             testsForFaces
+        , describe "SurfaceGraph.triangulateFaceFromCenter"
+            testsForTriangulate
         ]
