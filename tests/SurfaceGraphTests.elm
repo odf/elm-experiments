@@ -158,17 +158,9 @@ testsForTriangulate =
                         |> ListHelpers.cyclicPairs
                         |> List.map (\( v, w ) -> [ v, w, n ])
             in
-                Expect.all
-                    [ \gr ->
-                        ListHelpers.diffLists facesOld facesNew
-                            |> normalized
-                            |> Expect.equalLists (normalized deleted)
-                    , \gr ->
-                        ListHelpers.diffLists facesNew facesOld
-                            |> normalized
-                            |> Expect.equalLists (normalized added)
-                    ]
-                    gr
+                Expect.equalLists
+                    ((facesOld ++ added) |> normalized)
+                    ((facesNew ++ deleted) |> normalized)
     ]
 
 
@@ -201,17 +193,9 @@ testsForRemoveEdge =
                 added =
                     [ (faceTail v w gr) ++ (faceTail w v gr) ]
             in
-                Expect.all
-                    [ \gr ->
-                        ListHelpers.diffLists facesOld facesNew
-                            |> normalized
-                            |> Expect.equalLists (normalized deleted)
-                    , \gr ->
-                        ListHelpers.diffLists facesNew facesOld
-                            |> normalized
-                            |> Expect.equalLists (normalized added)
-                    ]
-                    gr
+                Expect.equalLists
+                    ((facesOld ++ added) |> normalized)
+                    ((facesNew ++ deleted) |> normalized)
     ]
 
 
