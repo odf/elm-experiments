@@ -27,6 +27,19 @@ graph =
         (shortList int)
 
 
+graphWithEdge : Fuzzer ( Graph, Int, Int )
+graphWithEdge =
+    Fuzz.map2
+        (\gr a ->
+            Graph.directedEdges gr
+                |> ListHelpers.pickCyclic a
+                |> Maybe.withDefault ( 0, 0 )
+                |> (\( v, w ) -> ( gr, v, w ))
+        )
+        graph
+        int
+
+
 generalTests : List Test
 generalTests =
     [ fuzz graph "graph is reconstructed from neighbor lists" <|
@@ -119,46 +132,84 @@ testsForFaces =
     ]
 
 
+normalized =
+    List.map ListHelpers.sortCyclic >> List.sort
+
+
 testsForTriangulate : List Test
 testsForTriangulate =
-    [ fuzz2 graph int "the modified graph has the expected faces" <|
-        \gr a ->
+    [ fuzz graphWithEdge "the modified graph has the expected faces" <|
+        \( gr, v, w ) ->
             let
-                normalized =
-                    List.map ListHelpers.sortCyclic >> List.sort
-
                 n =
                     Graph.nrVertices gr
 
-                ( v, w ) =
-                    Graph.directedEdges gr
-                        |> ListHelpers.pickCyclic a
-                        |> Maybe.withDefault ( 0, 0 )
+                facesOld =
+                    Graph.faces gr
 
                 facesNew =
-                    Graph.triangulateFaceFromCenter v w gr
-                        |> Graph.faces
-                        |> normalized
-
-                facesOld =
-                    Graph.faces gr |> normalized
+                    Graph.triangulateFaceFromCenter v w gr |> Graph.faces
 
                 deleted =
-                    [ Graph.face v w gr ] |> normalized
+                    [ Graph.face v w gr ]
 
                 added =
                     Graph.face v w gr
                         |> ListHelpers.cyclicPairs
                         |> List.map (\( v, w ) -> [ v, w, n ])
-                        |> normalized
             in
                 Expect.all
                     [ \gr ->
                         ListHelpers.diffLists facesOld facesNew
-                            |> Expect.equalLists deleted
+                            |> normalized
+                            |> Expect.equalLists (normalized deleted)
                     , \gr ->
                         ListHelpers.diffLists facesNew facesOld
-                            |> Expect.equalLists added
+                            |> normalized
+                            |> Expect.equalLists (normalized added)
+                    ]
+                    gr
+    ]
+
+
+faceTail : Int -> Int -> Graph -> List Int
+faceTail v w gr =
+    let
+        f =
+            Graph.face v w gr
+    in
+        ListHelpers.indexWhen ((==) w) f
+            |> Maybe.withDefault 0
+            |> (\n -> ListHelpers.cycle n f)
+            |> List.drop 1
+
+
+testsForRemoveEdge : List Test
+testsForRemoveEdge =
+    [ fuzz graphWithEdge "the modified graph has the expected faces" <|
+        \( gr, v, w ) ->
+            let
+                facesOld =
+                    Graph.faces gr
+
+                facesNew =
+                    Graph.removeEdge v w gr |> Graph.faces
+
+                deleted =
+                    [ Graph.face v w gr, Graph.face w v gr ]
+
+                added =
+                    [ (faceTail v w gr) ++ (faceTail w v gr) ]
+            in
+                Expect.all
+                    [ \gr ->
+                        ListHelpers.diffLists facesOld facesNew
+                            |> normalized
+                            |> Expect.equalLists (normalized deleted)
+                    , \gr ->
+                        ListHelpers.diffLists facesNew facesOld
+                            |> normalized
+                            |> Expect.equalLists (normalized added)
                     ]
                     gr
     ]
@@ -175,4 +226,6 @@ suite =
             testsForFaces
         , describe "SurfaceGraph.triangulateFaceFromCenter"
             testsForTriangulate
+        , describe "SurfaceGraph.removeEdge"
+            testsForRemoveEdge
         ]
