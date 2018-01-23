@@ -124,8 +124,8 @@ testsForTriangulate =
     [ fuzz2 graph int "the modified graph has the expected faces" <|
         \gr a ->
             let
-                normalized faces =
-                    faces |> List.map ListHelpers.sortCyclic |> List.sort
+                normalized =
+                    List.map ListHelpers.sortCyclic >> List.sort
 
                 n =
                     Graph.nrVertices gr
