@@ -180,22 +180,25 @@ testsForRemoveEdge : List Test
 testsForRemoveEdge =
     [ fuzz graphWithEdge "the modified graph has the expected faces" <|
         \( gr, v, w ) ->
-            let
-                facesOld =
-                    Graph.faces gr
+            if Graph.removableEdge v w gr then
+                let
+                    facesOld =
+                        Graph.faces gr
 
-                facesNew =
-                    Graph.removeEdge v w gr |> Graph.faces
+                    facesNew =
+                        Graph.removeEdge v w gr |> Graph.faces
 
-                deleted =
-                    [ Graph.face v w gr, Graph.face w v gr ]
+                    deleted =
+                        [ Graph.face v w gr, Graph.face w v gr ]
 
-                added =
-                    [ (faceTail v w gr) ++ (faceTail w v gr) ]
-            in
-                Expect.equalLists
-                    ((facesOld ++ added) |> normalized)
-                    ((facesNew ++ deleted) |> normalized)
+                    added =
+                        [ (faceTail v w gr) ++ (faceTail w v gr) ]
+                in
+                    Expect.equalLists
+                        ((facesOld ++ added) |> normalized)
+                        ((facesNew ++ deleted) |> normalized)
+            else
+                Expect.pass
     ]
 
 
