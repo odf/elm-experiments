@@ -12,6 +12,7 @@ module SurfaceGraph
         , faces
         , addVertex
         , triangulateFaceFromCenter
+        , removableEdge
         , removeEdge
         )
 
@@ -158,6 +159,16 @@ addVertex nbs ((Graph adj) as gr) =
 triangulateFaceFromCenter : Int -> Int -> Graph -> Graph
 triangulateFaceFromCenter v w gr =
     addVertex (face v w gr) gr
+
+
+removableEdge : Int -> Int -> Graph -> Bool
+removableEdge v w gr =
+    (degree v gr > 3)
+        && (degree w gr > 3)
+        && (ListHelpers.intersectLists (face v w gr) (face w v gr)
+                |> List.length
+                |> (==) 2
+           )
 
 
 removeEdge : Int -> Int -> Graph -> Graph
