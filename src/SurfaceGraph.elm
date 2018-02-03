@@ -1,6 +1,7 @@
 module SurfaceGraph
     exposing
         ( Graph
+        , tetrahedron
         , graph
         , neighbors
         , degree
@@ -30,9 +31,16 @@ makeGraph =
     Array.map ListHelpers.sortCyclic >> Graph
 
 
-graph : List (List Int) -> Graph
+tetrahedron : Graph
+tetrahedron =
+    [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
+        |> Array.fromList
+        |> makeGraph
+
+
+graph : List (List Int) -> Maybe Graph
 graph =
-    Array.fromList >> makeGraph
+    Array.fromList >> makeGraph >> Just
 
 
 neighbors : Int -> Graph -> List Int

@@ -3,7 +3,7 @@ module GraphExamples exposing (..)
 import SurfaceGraph exposing (Graph, graph)
 
 
-cube : Graph
+cube : Maybe Graph
 cube =
     graph
         [ [ 4, 3, 1 ]
@@ -17,7 +17,7 @@ cube =
         ]
 
 
-dodecahedron : Graph
+dodecahedron : Maybe Graph
 dodecahedron =
     graph
         [ [ 1, 5, 4 ]
@@ -43,7 +43,7 @@ dodecahedron =
         ]
 
 
-c60 : Graph
+c60 : Maybe Graph
 c60 =
     graph <|
         [ [ 17, 18, 1 ]
@@ -109,7 +109,7 @@ c60 =
         ]
 
 
-fulleroidI_5_7a : Graph
+fulleroidI_5_7a : Maybe Graph
 fulleroidI_5_7a =
     graph <|
         [ [ 1, 2, 10 ]
@@ -375,7 +375,7 @@ fulleroidI_5_7a =
         ]
 
 
-fulleroidI_5_7b : Graph
+fulleroidI_5_7b : Maybe Graph
 fulleroidI_5_7b =
     graph <|
         [ [ 1, 6, 10 ]
@@ -641,7 +641,7 @@ fulleroidI_5_7b =
         ]
 
 
-fulleroidI_5_8 : Graph
+fulleroidI_5_8 : Maybe Graph
 fulleroidI_5_8 =
     graph <|
         [ [ 4, 1, 16 ]
@@ -847,7 +847,7 @@ fulleroidI_5_8 =
         ]
 
 
-fulleroidI_5_12 : Graph
+fulleroidI_5_12 : Maybe Graph
 fulleroidI_5_12 =
     graph <|
         [ [ 6, 1, 26 ]

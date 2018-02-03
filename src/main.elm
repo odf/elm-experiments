@@ -28,7 +28,7 @@ type Msg
     | CameraMsg Camera.Msg
 
 
-graph : SurfaceGraph.Graph
+graph : Maybe SurfaceGraph.Graph
 graph =
     GraphExamples.fulleroidI_5_12
 
@@ -38,23 +38,28 @@ embedder =
     Embed.molecular
 
 
-mesh : Embed.Embedder -> Graph -> WebGL.Mesh Renderer.Vertex
-mesh embedder adj =
-    let
-        pos =
-            embedder adj
+mesh : Embed.Embedder -> Maybe Graph -> WebGL.Mesh Renderer.Vertex
+mesh embedder gr =
+    case gr of
+        Nothing ->
+            WebGL.lines []
 
-        meshVertex v =
+        Just adj ->
             let
-                p =
-                    Embed.getPos v pos
-            in
-                { color = (vec3 1 1 1), pos = p, normal = p }
+                pos =
+                    embedder adj
 
-        meshEdge ( v, w ) =
-            ( meshVertex v, meshVertex w )
-    in
-        WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
+                meshVertex v =
+                    let
+                        p =
+                            Embed.getPos v pos
+                    in
+                        { color = (vec3 1 1 1), pos = p, normal = p }
+
+                meshEdge ( v, w ) =
+                    ( meshVertex v, meshVertex w )
+            in
+                WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
 
 
 init : ( Model, Cmd Msg )

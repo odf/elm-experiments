@@ -1,7 +1,6 @@
 module GraphGen
     exposing
-        ( tetrahedron
-        , addNVertex
+        ( addNVertex
         , grow
         , shrink
         , build
@@ -9,12 +8,6 @@ module GraphGen
 
 import ListHelpers
 import SurfaceGraph exposing (..)
-
-
-tetrahedron : Graph
-tetrahedron =
-    graph
-        [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
 
 
 neighborsFrom : Int -> Int -> Int -> Graph -> Maybe (List Int)
@@ -77,6 +70,6 @@ shrink a gr =
 
 build : List ( Int, Int ) -> List Int -> Graph
 build growParms shrinkParms =
-    tetrahedron
+    SurfaceGraph.tetrahedron
         |> (\gr -> List.foldl (\( a, b ) -> grow a b) gr growParms)
         |> (\gr -> List.foldl shrink gr shrinkParms)

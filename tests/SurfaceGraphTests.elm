@@ -47,6 +47,7 @@ generalTests =
             List.range 0 (Graph.nrVertices gr - 1)
                 |> List.map (\v -> Graph.neighbors v gr)
                 |> Graph.graph
+                |> Maybe.withDefault Graph.tetrahedron
                 |> Expect.equal gr
     , fuzz graph "directed edges come in opposite pairs" <|
         \gr ->
