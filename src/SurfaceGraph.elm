@@ -31,6 +31,17 @@ makeGraph =
     Array.map ListHelpers.sortCyclic >> Graph
 
 
+verifyGraph : Graph -> Bool
+verifyGraph ((Graph adj) as gr) =
+    let
+        es =
+            List.sort (directedEdges gr)
+    in
+        (es == List.sort (List.map (\( v, w ) -> ( w, v )) es))
+            && (es == ListHelpers.unique es)
+            && (List.all (\( v, w ) -> v /= w) es)
+
+
 tetrahedron : Graph
 tetrahedron =
     [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
@@ -39,8 +50,15 @@ tetrahedron =
 
 
 graph : List (List Int) -> Maybe Graph
-graph =
-    Array.fromList >> makeGraph >> Just
+graph adj =
+    let
+        gr =
+            makeGraph (Array.fromList adj)
+    in
+        if verifyGraph gr then
+            Just gr
+        else
+            Nothing
 
 
 neighbors : Int -> Graph -> List Int
@@ -60,11 +78,8 @@ nrVertices (Graph adj) =
 
 directedEdges : Graph -> List ( Int, Int )
 directedEdges (Graph adj) =
-    let
-        incident ( v, nbs ) =
-            List.map (\w -> ( v, w )) nbs
-    in
-        Array.toIndexedList adj |> List.concatMap incident
+    Array.toIndexedList adj
+        |> List.concatMap (\( v, nbs ) -> List.map (\w -> ( v, w )) nbs)
 
 
 edges : Graph -> List ( Int, Int )
