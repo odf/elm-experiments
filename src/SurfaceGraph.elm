@@ -49,11 +49,21 @@ validateGraph ((Graph adj) as gr) =
             && (List.length reachable == nrVertices gr)
 
 
+
+{-
+   tetrahedron : Graph
+   tetrahedron =
+       [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
+           |> Array.fromList
+           |> makeGraph
+-}
+
+
 tetrahedron : Graph
 tetrahedron =
-    [ [ 1, 2, 3 ], [ 0, 3, 2 ], [ 0, 1, 3 ], [ 0, 2, 1 ] ]
-        |> Array.fromList
-        |> makeGraph
+    makeGraph (Array.fromList [ [ 1 ], [ 0 ] ])
+        |> triangulateFaceFromCenter 0 1
+        |> triangulateFaceFromCenter 1 0
 
 
 graph : List (List Int) -> Maybe Graph
