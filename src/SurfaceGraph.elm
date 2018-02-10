@@ -31,15 +31,22 @@ makeGraph =
     Array.map ListHelpers.sortCyclic >> Graph
 
 
-verifyGraph : Graph -> Bool
-verifyGraph ((Graph adj) as gr) =
+validateGraph : Graph -> Bool
+validateGraph ((Graph adj) as gr) =
     let
+        reachable =
+            if nrVertices gr == 0 then
+                []
+            else
+                verticesByDistance 0 gr |> List.concat
+
         es =
             List.sort (directedEdges gr)
     in
         (es == List.sort (List.map (\( v, w ) -> ( w, v )) es))
             && (es == ListHelpers.unique es)
             && (List.all (\( v, w ) -> v /= w) es)
+            && (List.length reachable == nrVertices gr)
 
 
 tetrahedron : Graph
@@ -55,7 +62,7 @@ graph adj =
         gr =
             makeGraph (Array.fromList adj)
     in
-        if verifyGraph gr then
+        if validateGraph gr then
             Just gr
         else
             Nothing
