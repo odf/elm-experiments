@@ -48,6 +48,7 @@ type alias ModelData =
     , cameraDistance : Float
     , fieldOfView : Float
     , dragging : Bool
+    , moving : Bool
     , ndcPos : Position
     , shift : Vec3
     , rotation : Mat4
@@ -81,6 +82,7 @@ initialModel =
         , cameraDistance = 5
         , fieldOfView = 45
         , dragging = False
+        , moving = False
         , ndcPos = { x = 0, y = 0 }
         , rotation = Mat4.identity
         , deltaRot = Mat4.identity
@@ -110,10 +112,10 @@ update msg (Model model) =
             mouseMoveUpdate pos (Model model)
 
         MouseDownMsg ->
-            Model { model | dragging = True, deltaRot = Mat4.identity } ! []
+            Model { model | dragging = True, moving = True, moved = False } ! []
 
         MouseUpMsg pos ->
-            Model { model | dragging = False } ! []
+            Model { model | dragging = False, moving = model.moved } ! []
 
         KeyUpMsg keyCode ->
             Model
@@ -134,14 +136,21 @@ update msg (Model model) =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ AnimationFrame.times FrameMsg
-        , Mouse.moves MouseMoveMsg
-        , Mouse.ups MouseUpMsg
-        , Keyboard.downs KeyDownMsg
-        , Keyboard.ups KeyUpMsg
-        ]
+subscriptions (Model model) =
+    let
+        animation =
+            if model.moving then
+                [ AnimationFrame.times FrameMsg ]
+            else
+                []
+    in
+        Sub.batch <|
+            animation
+                ++ [ Mouse.moves MouseMoveMsg
+                   , Mouse.ups MouseUpMsg
+                   , Keyboard.downs KeyDownMsg
+                   , Keyboard.ups KeyUpMsg
+                   ]
 
 
 view : List WebGL.Entity -> Model -> Html Msg
@@ -170,16 +179,15 @@ updateModifiers keyCode value oldMods =
 frameUpdate : Float -> Model -> ( Model, Cmd Msg )
 frameUpdate float (Model model) =
     if model.dragging then
-        if model.moved then
-            Model { model | moved = False } ! []
-        else
-            Model { model | deltaRot = Mat4.identity } ! []
-    else
+        Model { model | moved = False } ! []
+    else if model.moving then
         let
             rotation =
                 orthonormalized <| Mat4.mul model.deltaRot model.rotation
         in
             Model { model | rotation = rotation } ! []
+    else
+        Model model ! []
 
 
 mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
@@ -241,7 +249,7 @@ panMouse ndcPosNew (Model model) =
         Model
             { model
                 | ndcPos = ndcPosNew
-                , moved = dx /= 0 || dy /= 0
+                , moved = False
                 , shift = Vec3.add model.shift shift
             }
             ! []
