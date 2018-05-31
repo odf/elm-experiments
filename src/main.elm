@@ -1,10 +1,12 @@
 module Main exposing (main)
 
+import AnimationFrame
 import Char
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Keyboard
+import Mouse
 import Math.Vector3 exposing (vec3)
 import Task
 import WebGL
@@ -90,11 +92,22 @@ initMaterial =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Window.resizes ResizeMsg
-        , Keyboard.presses KeyPressMsg
-        , Sub.map CameraMsg <| Camera.subscriptions model.cameraModel
-        ]
+    let
+        animation =
+            if Camera.isMoving model.cameraModel then
+                [ AnimationFrame.times (CameraMsg << Camera.FrameMsg) ]
+            else
+                []
+    in
+        Sub.batch <|
+            animation
+                ++ [ Mouse.moves (CameraMsg << Camera.MouseMoveMsg)
+                   , Mouse.ups (CameraMsg << Camera.MouseUpMsg)
+                   , Keyboard.downs (CameraMsg << Camera.KeyDownMsg)
+                   , Keyboard.ups (CameraMsg << Camera.KeyUpMsg)
+                   , Window.resizes ResizeMsg
+                   , Keyboard.presses KeyPressMsg
+                   ]
 
 
 updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )

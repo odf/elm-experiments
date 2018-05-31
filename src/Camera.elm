@@ -1,20 +1,18 @@
 module Camera
     exposing
         ( Model
-        , Msg(ResizeMsg, LookAtMsg, MouseDownMsg, WheelMsg)
+        , Msg(..)
         , initialModel
-        , subscriptions
         , update
         , perspectiveMatrix
         , viewingMatrix
         , cameraDistance
+        , isMoving
         )
 
-import AnimationFrame
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
-import Keyboard
 import Time exposing (Time)
 
 
@@ -125,24 +123,6 @@ update msg (Model model) =
 
         WheelMsg value ->
             wheelUpdate value (Model model)
-
-
-subscriptions : Model -> Sub Msg
-subscriptions (Model model) =
-    let
-        animation =
-            if model.moving then
-                [ AnimationFrame.times FrameMsg ]
-            else
-                []
-    in
-        Sub.batch <|
-            animation
-                ++ [ Mouse.moves MouseMoveMsg
-                   , Mouse.ups MouseUpMsg
-                   , Keyboard.downs KeyDownMsg
-                   , Keyboard.ups KeyUpMsg
-                   ]
 
 
 updateModifiers : Int -> Bool -> Modifiers -> Modifiers
@@ -362,3 +342,8 @@ perspectiveMatrix (Model model) =
 cameraDistance : Model -> Float
 cameraDistance (Model model) =
     model.cameraDistance
+
+
+isMoving : Model -> Bool
+isMoving (Model model) =
+    model.moving
