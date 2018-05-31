@@ -86,44 +86,42 @@ initialModel =
         }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> Model
 update msg (Model model) =
     case msg of
         FrameMsg time ->
             frameUpdate time (Model model)
 
         ResizeMsg size ->
-            Model { model | size = size } ! []
+            Model { model | size = size }
 
         LookAtMsg axis up ->
             let
                 rotation =
                     Mat4.makeLookAt (vec3 0 0 0) axis up
             in
-                Model { model | rotation = rotation } ! []
+                Model { model | rotation = rotation }
 
         MouseMoveMsg pos ->
             mouseMoveUpdate pos (Model model)
 
         MouseDownMsg ->
-            Model { model | dragging = True, moving = True, moved = False } ! []
+            Model { model | dragging = True, moving = True, moved = False }
 
         MouseUpMsg pos ->
-            Model { model | dragging = False, moving = model.moved } ! []
+            Model { model | dragging = False, moving = model.moved }
 
         KeyUpMsg keyCode ->
             Model
                 { model
                     | modifiers = updateModifiers keyCode False model.modifiers
                 }
-                ! []
 
         KeyDownMsg keyCode ->
             Model
                 { model
                     | modifiers = updateModifiers keyCode True model.modifiers
                 }
-                ! []
 
         WheelMsg value ->
             wheelUpdate value (Model model)
@@ -157,21 +155,21 @@ updateModifiers keyCode value oldMods =
         oldMods
 
 
-frameUpdate : Float -> Model -> ( Model, Cmd Msg )
+frameUpdate : Float -> Model -> Model
 frameUpdate float (Model model) =
     if model.dragging then
-        Model { model | moved = False } ! []
+        Model { model | moved = False }
     else if model.moving then
         let
             rotation =
                 orthonormalized <| Mat4.mul model.deltaRot model.rotation
         in
-            Model { model | rotation = rotation } ! []
+            Model { model | rotation = rotation }
     else
-        Model model ! []
+        Model model
 
 
-mouseMoveUpdate : Mouse.Position -> Model -> ( Model, Cmd Msg )
+mouseMoveUpdate : Mouse.Position -> Model -> Model
 mouseMoveUpdate pos (Model model) =
     let
         xRelative =
@@ -189,10 +187,10 @@ mouseMoveUpdate pos (Model model) =
             else
                 rotateMouse ndcPos (Model model)
         else
-            Model { model | ndcPos = ndcPos } ! []
+            Model { model | ndcPos = ndcPos }
 
 
-wheelUpdate : Float -> Model -> ( Model, Cmd Msg )
+wheelUpdate : Float -> Model -> Model
 wheelUpdate value (Model model) =
     let
         factor =
@@ -209,10 +207,10 @@ wheelUpdate value (Model model) =
             else
                 { model | cameraDistance = factor * model.cameraDistance }
     in
-        Model newModel ! []
+        Model newModel
 
 
-panMouse : Position -> Model -> ( Model, Cmd Msg )
+panMouse : Position -> Model -> Model
 panMouse ndcPosNew (Model model) =
     let
         dx =
@@ -233,10 +231,9 @@ panMouse ndcPosNew (Model model) =
                 , moved = False
                 , shift = Vec3.add model.shift shift
             }
-            ! []
 
 
-rotateMouse : Position -> Model -> ( Model, Cmd Msg )
+rotateMouse : Position -> Model -> Model
 rotateMouse ndcPosNew (Model model) =
     let
         ( axis, angle ) =
@@ -255,7 +252,6 @@ rotateMouse ndcPosNew (Model model) =
                 , rotation = rotation
                 , moved = angle /= 0
             }
-            ! []
 
 
 zRotationAngle : Float -> Float -> Float -> Float -> Float

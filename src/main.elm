@@ -100,12 +100,10 @@ subscriptions model =
 updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )
 updateCamera camMsg model =
     let
-        ( updatedCameraModel, cmd ) =
+        updatedCameraModel =
             Camera.update camMsg model.cameraModel
     in
-        ( { model | cameraModel = updatedCameraModel }
-        , Cmd.map CameraMsg cmd
-        )
+        { model | cameraModel = updatedCameraModel } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
