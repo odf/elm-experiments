@@ -2,6 +2,8 @@ module Main exposing (main)
 
 import Char
 import Html exposing (Html)
+import Html.Attributes
+import Html.Events
 import Keyboard
 import Math.Vector3 exposing (vec3)
 import Task
@@ -12,6 +14,7 @@ import GraphExamples
 import Embed
 import Camera
 import Renderer
+import WheelEvent
 
 
 type alias Model =
@@ -115,7 +118,7 @@ update msg model =
                     , height = toFloat size.height
                     }
             in
-                updateCamera (Camera.ResizeMsg sz) model
+                updateCamera (Camera.ResizeMsg sz) { model | size = size }
 
         KeyPressMsg code ->
             let
@@ -166,7 +169,15 @@ view model =
                 (Camera.perspectiveMatrix model.cameraModel)
             ]
     in
-        Html.map CameraMsg <| Camera.view entities model.cameraModel
+        WebGL.toHtml
+            [ Html.Attributes.width model.size.width
+            , Html.Attributes.height model.size.height
+            , Html.Attributes.style
+                [ ( "display", "block" ), ( "background", "black" ) ]
+            , Html.Events.onMouseDown (CameraMsg Camera.MouseDownMsg)
+            , WheelEvent.onMouseWheel (CameraMsg << Camera.WheelMsg)
+            ]
+            entities
 
 
 main : Program Never Model Msg

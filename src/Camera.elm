@@ -1,27 +1,21 @@
 module Camera
     exposing
         ( Model
-        , Msg(ResizeMsg, LookAtMsg)
+        , Msg(ResizeMsg, LookAtMsg, MouseDownMsg, WheelMsg)
         , initialModel
         , subscriptions
         , update
-        , view
         , perspectiveMatrix
         , viewingMatrix
         , cameraDistance
         )
 
 import AnimationFrame
-import Html exposing (Html)
-import Html.Attributes
-import Html.Events
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
 import Keyboard
 import Time exposing (Time)
-import WebGL
-import WheelEvent
 
 
 type alias Size =
@@ -151,19 +145,6 @@ subscriptions (Model model) =
                    , Keyboard.downs KeyDownMsg
                    , Keyboard.ups KeyUpMsg
                    ]
-
-
-view : List WebGL.Entity -> Model -> Html Msg
-view entities (Model model) =
-    WebGL.toHtml
-        [ Html.Attributes.width (round model.size.width)
-        , Html.Attributes.height (round model.size.height)
-        , Html.Attributes.style
-            [ ( "display", "block" ), ( "background", "black" ) ]
-        , Html.Events.onMouseDown MouseDownMsg
-        , WheelEvent.onMouseWheel WheelMsg
-        ]
-        entities
 
 
 updateModifiers : Int -> Bool -> Modifiers -> Modifiers
