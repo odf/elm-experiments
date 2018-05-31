@@ -99,11 +99,7 @@ subscriptions model =
 
 updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )
 updateCamera camMsg model =
-    let
-        updatedCameraModel =
-            Camera.update camMsg model.cameraModel
-    in
-        { model | cameraModel = updatedCameraModel } ! []
+    { model | cameraModel = Camera.update camMsg model.cameraModel } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
