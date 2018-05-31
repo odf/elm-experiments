@@ -158,7 +158,13 @@ view : Model -> Html Msg
 view model =
     let
         entities =
-            [ Renderer.entity model.mesh model.material model.cameraModel ]
+            [ Renderer.entity
+                model.mesh
+                model.material
+                (Camera.cameraDistance model.cameraModel)
+                (Camera.viewingMatrix model.cameraModel)
+                (Camera.perspectiveMatrix model.cameraModel)
+            ]
     in
         Html.map CameraMsg <| Camera.view entities model.cameraModel
 

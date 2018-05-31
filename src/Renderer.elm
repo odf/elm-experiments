@@ -3,7 +3,6 @@ module Renderer exposing (Vertex, Material, entity)
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import WebGL
-import Camera
 
 
 type alias Vertex =
@@ -54,15 +53,12 @@ scaleTo length vec =
     vec |> Vec3.normalize |> Vec3.scale length
 
 
-entity : WebGL.Mesh Vertex -> Material -> Camera.Model -> WebGL.Entity
-entity mesh material model =
+entity : WebGL.Mesh Vertex -> Material -> Float -> Mat4 -> Mat4 -> WebGL.Entity
+entity mesh material camDist viewingMatrix perspectiveMatrix =
     let
-        camDist =
-            Camera.cameraDistance model
-
         uniforms =
-            { viewing = Camera.viewingMatrix model
-            , perspective = Camera.perspectiveMatrix model
+            { viewing = viewingMatrix
+            , perspective = perspectiveMatrix
             , cameraPos = vec3 0 0 camDist
             , light1Pos = vec3 -1 1 2 |> scaleTo (50 * camDist)
             , light1Color = vec3 1 1 1
