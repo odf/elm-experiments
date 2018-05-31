@@ -272,7 +272,7 @@ rotateMouse ndcPosNew (Model model) =
                 | ndcPos = ndcPosNew
                 , deltaRot = deltaRot
                 , rotation = rotation
-                , moved = angle > 0
+                , moved = angle /= 0
             }
             ! []
 
