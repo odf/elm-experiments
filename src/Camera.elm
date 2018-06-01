@@ -1,8 +1,8 @@
 module Camera
     exposing
-        ( Model
+        ( State
         , Msg(..)
-        , initialModel
+        , initialState
         , update
         , perspectiveMatrix
         , viewingMatrix
@@ -34,7 +34,7 @@ type alias Modifiers =
     }
 
 
-type alias ModelData =
+type alias StateData =
     { size : Size
     , origin : Position
     , cameraDistance : Float
@@ -50,8 +50,8 @@ type alias ModelData =
     }
 
 
-type Model
-    = Model ModelData
+type State
+    = State StateData
 
 
 type Msg
@@ -66,9 +66,9 @@ type Msg
     | WheelMsg Float
 
 
-initialModel : Model
-initialModel =
-    Model
+initialState : State
+initialState =
+    State
         { size = { width = 0, height = 0 }
         , origin = { x = 0, y = 0 }
         , cameraDistance = 5
@@ -84,45 +84,45 @@ initialModel =
         }
 
 
-update : Msg -> Model -> Model
-update msg (Model model) =
+update : Msg -> State -> State
+update msg (State state) =
     case msg of
         FrameMsg time ->
-            frameUpdate time (Model model)
+            frameUpdate time (State state)
 
         ResizeMsg size ->
-            Model { model | size = size }
+            State { state | size = size }
 
         LookAtMsg axis up ->
             let
                 rotation =
                     Mat4.makeLookAt (vec3 0 0 0) axis up
             in
-                Model { model | rotation = rotation }
+                State { state | rotation = rotation }
 
         MouseMoveMsg pos ->
-            mouseMoveUpdate pos (Model model)
+            mouseMoveUpdate pos (State state)
 
         MouseDownMsg ->
-            Model { model | dragging = True, moving = True, moved = False }
+            State { state | dragging = True, moving = True, moved = False }
 
         MouseUpMsg pos ->
-            Model { model | dragging = False, moving = model.moved }
+            State { state | dragging = False, moving = state.moved }
 
         KeyUpMsg keyCode ->
-            Model
-                { model
-                    | modifiers = updateModifiers keyCode False model.modifiers
+            State
+                { state
+                    | modifiers = updateModifiers keyCode False state.modifiers
                 }
 
         KeyDownMsg keyCode ->
-            Model
-                { model
-                    | modifiers = updateModifiers keyCode True model.modifiers
+            State
+                { state
+                    | modifiers = updateModifiers keyCode True state.modifiers
                 }
 
         WheelMsg value ->
-            wheelUpdate value (Model model)
+            wheelUpdate value (State state)
 
 
 updateModifiers : Int -> Bool -> Modifiers -> Modifiers
@@ -135,43 +135,43 @@ updateModifiers keyCode value oldMods =
         oldMods
 
 
-frameUpdate : Float -> Model -> Model
-frameUpdate float (Model model) =
-    if model.dragging then
-        Model { model | moved = False }
-    else if model.moving then
+frameUpdate : Float -> State -> State
+frameUpdate float (State state) =
+    if state.dragging then
+        State { state | moved = False }
+    else if state.moving then
         let
             rotation =
-                orthonormalized <| Mat4.mul model.deltaRot model.rotation
+                orthonormalized <| Mat4.mul state.deltaRot state.rotation
         in
-            Model { model | rotation = rotation }
+            State { state | rotation = rotation }
     else
-        Model model
+        State state
 
 
-mouseMoveUpdate : Mouse.Position -> Model -> Model
-mouseMoveUpdate pos (Model model) =
+mouseMoveUpdate : Mouse.Position -> State -> State
+mouseMoveUpdate pos (State state) =
     let
         xRelative =
-            ((toFloat pos.x) - model.origin.x) / model.size.width
+            ((toFloat pos.x) - state.origin.x) / state.size.width
 
         yRelative =
-            ((toFloat pos.y) - model.origin.y) / model.size.height
+            ((toFloat pos.y) - state.origin.y) / state.size.height
 
         ndcPos =
             { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
     in
-        if model.dragging then
-            if model.modifiers.shift then
-                panMouse ndcPos (Model model)
+        if state.dragging then
+            if state.modifiers.shift then
+                panMouse ndcPos (State state)
             else
-                rotateMouse ndcPos (Model model)
+                rotateMouse ndcPos (State state)
         else
-            Model { model | ndcPos = ndcPos }
+            State { state | ndcPos = ndcPos }
 
 
-wheelUpdate : Float -> Model -> Model
-wheelUpdate value (Model model) =
+wheelUpdate : Float -> State -> State
+wheelUpdate value (State state) =
     let
         factor =
             if value > 0 then
@@ -181,52 +181,52 @@ wheelUpdate value (Model model) =
             else
                 1.0
 
-        newModel =
-            if model.modifiers.shift then
-                { model | fieldOfView = factor * model.fieldOfView }
+        newState =
+            if state.modifiers.shift then
+                { state | fieldOfView = factor * state.fieldOfView }
             else
-                { model | cameraDistance = factor * model.cameraDistance }
+                { state | cameraDistance = factor * state.cameraDistance }
     in
-        Model newModel
+        State newState
 
 
-panMouse : Position -> Model -> Model
-panMouse ndcPosNew (Model model) =
+panMouse : Position -> State -> State
+panMouse ndcPosNew (State state) =
     let
         dx =
-            ndcPosNew.x - model.ndcPos.x
+            ndcPosNew.x - state.ndcPos.x
 
         dy =
-            ndcPosNew.y - model.ndcPos.y
+            ndcPosNew.y - state.ndcPos.y
 
         invRot =
-            Mat4.inverseOrthonormal model.rotation
+            Mat4.inverseOrthonormal state.rotation
 
         shift =
             Mat4.transform invRot <| vec3 dx dy 0
     in
-        Model
-            { model
+        State
+            { state
                 | ndcPos = ndcPosNew
                 , moved = False
-                , shift = Vec3.add model.shift shift
+                , shift = Vec3.add state.shift shift
             }
 
 
-rotateMouse : Position -> Model -> Model
-rotateMouse ndcPosNew (Model model) =
+rotateMouse : Position -> State -> State
+rotateMouse ndcPosNew (State state) =
     let
         ( axis, angle ) =
-            rotationParameters ndcPosNew model.ndcPos
+            rotationParameters ndcPosNew state.ndcPos
 
         deltaRot =
             Mat4.makeRotate angle axis
 
         rotation =
-            orthonormalized <| Mat4.mul deltaRot model.rotation
+            orthonormalized <| Mat4.mul deltaRot state.rotation
     in
-        Model
-            { model
+        State
+            { state
                 | ndcPos = ndcPosNew
                 , deltaRot = deltaRot
                 , rotation = rotation
@@ -306,29 +306,29 @@ orthonormalized m =
         Mat4.makeBasis n1 n2 n3
 
 
-viewingMatrix : Model -> Mat4
-viewingMatrix (Model model) =
+viewingMatrix : State -> Mat4
+viewingMatrix (State state) =
     let
         camVector =
-            vec3 0 0 model.cameraDistance
+            vec3 0 0 state.cameraDistance
 
         camMatrix =
             Mat4.makeLookAt camVector (vec3 0 0 0) (vec3 0 1 0)
 
         shift =
-            Mat4.makeTranslate model.shift
+            Mat4.makeTranslate state.shift
     in
-        Mat4.mul camMatrix <| Mat4.mul model.rotation shift
+        Mat4.mul camMatrix <| Mat4.mul state.rotation shift
 
 
-perspectiveMatrix : Model -> Mat4
-perspectiveMatrix (Model model) =
+perspectiveMatrix : State -> Mat4
+perspectiveMatrix (State state) =
     let
         aspectRatio =
-            model.size.width / model.size.height
+            state.size.width / state.size.height
 
         fov =
-            model.fieldOfView
+            state.fieldOfView
 
         fovy =
             if aspectRatio >= 1 then
@@ -339,11 +339,11 @@ perspectiveMatrix (Model model) =
         Mat4.makePerspective fovy aspectRatio 0.01 100
 
 
-cameraDistance : Model -> Float
-cameraDistance (Model model) =
-    model.cameraDistance
+cameraDistance : State -> Float
+cameraDistance (State state) =
+    state.cameraDistance
 
 
-isMoving : Model -> Bool
-isMoving (Model model) =
-    model.moving
+isMoving : State -> Bool
+isMoving (State state) =
+    state.moving

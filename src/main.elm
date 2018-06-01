@@ -21,7 +21,7 @@ import WheelEvent
 
 type alias Model =
     { size : Window.Size
-    , cameraModel : Camera.Model
+    , cameraState : Camera.State
     , mesh : WebGL.Mesh Renderer.Vertex
     , material : Renderer.Material
     }
@@ -36,7 +36,7 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
-      , cameraModel = Camera.initialModel
+      , cameraState = Camera.initialState
       , mesh = mesh embedder graph
       , material = initMaterial
       }
@@ -48,7 +48,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     let
         animation =
-            if Camera.isMoving model.cameraModel then
+            if Camera.isMoving model.cameraState then
                 [ AnimationFrame.times (CameraMsg << Camera.FrameMsg) ]
             else
                 []
@@ -66,7 +66,7 @@ subscriptions model =
 
 updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )
 updateCamera camMsg model =
-    { model | cameraModel = Camera.update camMsg model.cameraModel } ! []
+    { model | cameraState = Camera.update camMsg model.cameraState } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -125,9 +125,9 @@ view model =
             [ Renderer.entity
                 model.mesh
                 model.material
-                (Camera.cameraDistance model.cameraModel)
-                (Camera.viewingMatrix model.cameraModel)
-                (Camera.perspectiveMatrix model.cameraModel)
+                (Camera.cameraDistance model.cameraState)
+                (Camera.viewingMatrix model.cameraState)
+                (Camera.perspectiveMatrix model.cameraState)
             ]
     in
         WebGL.toHtml
