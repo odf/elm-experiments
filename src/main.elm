@@ -9,6 +9,7 @@ import Keyboard
 import Mouse
 import Math.Vector3 exposing (vec3)
 import Task
+import Time exposing (Time)
 import WebGL
 import Window
 import SurfaceGraph exposing (Graph)
@@ -24,13 +25,19 @@ type alias Model =
     , cameraState : Camera.State
     , mesh : WebGL.Mesh Renderer.Vertex
     , material : Renderer.Material
+    , modifiers : { shift : Bool, ctrl : Bool }
     }
 
 
 type Msg
     = ResizeMsg Window.Size
-    | KeyPressMsg Char.KeyCode
-    | CameraMsg Camera.Msg
+    | FrameMsg Time
+    | MouseUpMsg Mouse.Position
+    | MouseDownMsg
+    | MouseMoveMsg Mouse.Position
+    | KeyDownMsg Int
+    | KeyUpMsg Int
+    | WheelMsg Float
 
 
 init : ( Model, Cmd Msg )
@@ -39,6 +46,7 @@ init =
       , cameraState = Camera.initialState
       , mesh = mesh embedder graph
       , material = initMaterial
+      , modifiers = { shift = False, ctrl = False }
       }
     , Task.perform ResizeMsg Window.size
     )
@@ -49,73 +57,117 @@ subscriptions model =
     let
         animation =
             if Camera.isMoving model.cameraState then
-                [ AnimationFrame.times (CameraMsg << Camera.FrameMsg) ]
+                [ AnimationFrame.times FrameMsg ]
             else
                 []
     in
         Sub.batch <|
             animation
-                ++ [ Mouse.moves (CameraMsg << Camera.MouseMoveMsg)
-                   , Mouse.ups (CameraMsg << Camera.MouseUpMsg)
-                   , Keyboard.downs (CameraMsg << Camera.KeyDownMsg)
-                   , Keyboard.ups (CameraMsg << Camera.KeyUpMsg)
+                ++ [ Mouse.moves MouseMoveMsg
+                   , Mouse.ups MouseUpMsg
+                   , Keyboard.downs KeyDownMsg
+                   , Keyboard.ups KeyUpMsg
                    , Window.resizes ResizeMsg
-                   , Keyboard.presses KeyPressMsg
                    ]
 
 
-updateCamera : Camera.Msg -> Model -> ( Model, Cmd Msg )
-updateCamera camMsg model =
-    { model | cameraState = Camera.update camMsg model.cameraState } ! []
+updateCameraState : (Camera.State -> Camera.State) -> Model -> ( Model, Cmd Msg )
+updateCameraState fn model =
+    { model | cameraState = fn model.cameraState } ! []
+
+
+setModifiers : Int -> Bool -> Model -> Model
+setModifiers keyCode value model =
+    let
+        oldModifiers =
+            model.modifiers
+    in
+        if keyCode == 16 then
+            { model | modifiers = { oldModifiers | shift = value } }
+        else if keyCode == 17 then
+            { model | modifiers = { oldModifiers | ctrl = value } }
+        else
+            model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ResizeMsg size ->
-            let
-                sz =
-                    { width = toFloat size.width
-                    , height = toFloat size.height
-                    }
-            in
-                updateCamera (Camera.ResizeMsg sz) { model | size = size }
+            updateCameraState (Camera.setFrameSize size) { model | size = size }
 
-        KeyPressMsg code ->
+        FrameMsg time ->
+            updateCameraState (Camera.nextFrame time) model
+
+        MouseDownMsg ->
+            updateCameraState Camera.startDragging model
+
+        MouseUpMsg pos ->
+            updateCameraState (Camera.finishDragging pos) model
+
+        MouseMoveMsg pos ->
             let
+                alter =
+                    model.modifiers.shift
+            in
+                updateCameraState (Camera.setMousePosition pos alter) model
+
+        WheelMsg val ->
+            let
+                alter =
+                    model.modifiers.shift
+            in
+                updateCameraState (Camera.updateZoom val alter) model
+
+        KeyDownMsg code ->
+            setModifiers code True model ! []
+
+        KeyUpMsg code ->
+            let
+                tmpModel =
+                    setModifiers code False model
+
                 char =
                     Char.toLower <| Char.fromCode code
-
-                lookAlong axis up =
-                    updateCamera (Camera.LookAtMsg axis up) model
             in
                 case char of
                     'a' ->
-                        lookAlong (vec3 0 -1 -1) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 0 -1 -1) (vec3 0 1 0))
+                            tmpModel
 
                     'b' ->
-                        lookAlong (vec3 -1 0 -1) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 -1 0 -1) (vec3 0 1 0))
+                            tmpModel
 
                     'c' ->
-                        lookAlong (vec3 -1 -1 0) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 -1 -1 0) (vec3 0 1 0))
+                            tmpModel
 
                     'd' ->
-                        lookAlong (vec3 -1 -1 -1) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 -1 -1 -1) (vec3 0 1 0))
+                            tmpModel
 
                     'x' ->
-                        lookAlong (vec3 -1 0 0) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 -1 0 0) (vec3 0 1 0))
+                            tmpModel
 
                     'y' ->
-                        lookAlong (vec3 0 -1 0) (vec3 0 0 -1)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 0 -1 0) (vec3 0 0 -1))
+                            tmpModel
 
                     'z' ->
-                        lookAlong (vec3 0 0 -1) (vec3 0 1 0)
+                        updateCameraState
+                            (Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
+                            tmpModel
 
                     _ ->
-                        model ! []
-
-        CameraMsg camMsg ->
-            updateCamera camMsg model
+                        tmpModel ! []
 
 
 view : Model -> Html Msg
@@ -135,8 +187,8 @@ view model =
             , Html.Attributes.height model.size.height
             , Html.Attributes.style
                 [ ( "display", "block" ), ( "background", "black" ) ]
-            , Html.Events.onMouseDown (CameraMsg Camera.MouseDownMsg)
-            , WheelEvent.onMouseWheel (CameraMsg << Camera.WheelMsg)
+            , Html.Events.onMouseDown MouseDownMsg
+            , WheelEvent.onMouseWheel WheelMsg
             ]
             entities
 

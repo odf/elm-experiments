@@ -1,9 +1,14 @@
 module Camera
     exposing
         ( State
-        , Msg(..)
         , initialState
-        , update
+        , nextFrame
+        , setMousePosition
+        , updateZoom
+        , setFrameSize
+        , startDragging
+        , finishDragging
+        , lookAlong
         , perspectiveMatrix
         , viewingMatrix
         , cameraDistance
@@ -13,13 +18,7 @@ module Camera
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Mouse
-import Time exposing (Time)
-
-
-type alias Size =
-    { width : Float
-    , height : Float
-    }
+import Window
 
 
 type alias Position =
@@ -28,42 +27,20 @@ type alias Position =
     }
 
 
-type alias Modifiers =
-    { shift : Bool
-    , ctrl : Bool
-    }
-
-
-type alias StateData =
-    { size : Size
-    , origin : Position
-    , cameraDistance : Float
-    , fieldOfView : Float
-    , dragging : Bool
-    , moving : Bool
-    , ndcPos : Position
-    , shift : Vec3
-    , rotation : Mat4
-    , deltaRot : Mat4
-    , moved : Bool
-    , modifiers : Modifiers
-    }
-
-
 type State
-    = State StateData
-
-
-type Msg
-    = FrameMsg Time
-    | ResizeMsg Size
-    | LookAtMsg Vec3 Vec3
-    | MouseMoveMsg Mouse.Position
-    | MouseUpMsg Mouse.Position
-    | MouseDownMsg
-    | KeyDownMsg Int
-    | KeyUpMsg Int
-    | WheelMsg Float
+    = State
+        { size : { width : Float, height : Float }
+        , origin : Position
+        , cameraDistance : Float
+        , fieldOfView : Float
+        , dragging : Bool
+        , moving : Bool
+        , ndcPos : Position
+        , shift : Vec3
+        , rotation : Mat4
+        , deltaRot : Mat4
+        , moved : Bool
+        }
 
 
 initialState : State
@@ -79,64 +56,12 @@ initialState =
         , rotation = Mat4.identity
         , deltaRot = Mat4.identity
         , moved = False
-        , modifiers = { shift = False, ctrl = False }
         , shift = vec3 0 0 0
         }
 
 
-update : Msg -> State -> State
-update msg (State state) =
-    case msg of
-        FrameMsg time ->
-            frameUpdate time (State state)
-
-        ResizeMsg size ->
-            State { state | size = size }
-
-        LookAtMsg axis up ->
-            let
-                rotation =
-                    Mat4.makeLookAt (vec3 0 0 0) axis up
-            in
-                State { state | rotation = rotation }
-
-        MouseMoveMsg pos ->
-            mouseMoveUpdate pos (State state)
-
-        MouseDownMsg ->
-            State { state | dragging = True, moving = True, moved = False }
-
-        MouseUpMsg pos ->
-            State { state | dragging = False, moving = state.moved }
-
-        KeyUpMsg keyCode ->
-            State
-                { state
-                    | modifiers = updateModifiers keyCode False state.modifiers
-                }
-
-        KeyDownMsg keyCode ->
-            State
-                { state
-                    | modifiers = updateModifiers keyCode True state.modifiers
-                }
-
-        WheelMsg value ->
-            wheelUpdate value (State state)
-
-
-updateModifiers : Int -> Bool -> Modifiers -> Modifiers
-updateModifiers keyCode value oldMods =
-    if keyCode == 16 then
-        { oldMods | shift = value }
-    else if keyCode == 17 then
-        { oldMods | ctrl = value }
-    else
-        oldMods
-
-
-frameUpdate : Float -> State -> State
-frameUpdate float (State state) =
+nextFrame : Float -> State -> State
+nextFrame float (State state) =
     if state.dragging then
         State { state | moved = False }
     else if state.moving then
@@ -149,8 +74,8 @@ frameUpdate float (State state) =
         State state
 
 
-mouseMoveUpdate : Mouse.Position -> State -> State
-mouseMoveUpdate pos (State state) =
+setMousePosition : Mouse.Position -> Bool -> State -> State
+setMousePosition pos alter (State state) =
     let
         xRelative =
             ((toFloat pos.x) - state.origin.x) / state.size.width
@@ -162,7 +87,7 @@ mouseMoveUpdate pos (State state) =
             { x = 2 * xRelative - 1, y = 1 - 2 * yRelative }
     in
         if state.dragging then
-            if state.modifiers.shift then
+            if alter then
                 panMouse ndcPos (State state)
             else
                 rotateMouse ndcPos (State state)
@@ -170,8 +95,8 @@ mouseMoveUpdate pos (State state) =
             State { state | ndcPos = ndcPos }
 
 
-wheelUpdate : Float -> State -> State
-wheelUpdate value (State state) =
+updateZoom : Float -> Bool -> State -> State
+updateZoom value alter (State state) =
     let
         factor =
             if value > 0 then
@@ -182,12 +107,38 @@ wheelUpdate value (State state) =
                 1.0
 
         newState =
-            if state.modifiers.shift then
+            if alter then
                 { state | fieldOfView = factor * state.fieldOfView }
             else
                 { state | cameraDistance = factor * state.cameraDistance }
     in
         State newState
+
+
+setFrameSize : Window.Size -> State -> State
+setFrameSize size (State state) =
+    State
+        { state
+            | size =
+                { width = toFloat size.width
+                , height = toFloat size.height
+                }
+        }
+
+
+startDragging : State -> State
+startDragging (State state) =
+    State { state | dragging = True, moving = True, moved = False }
+
+
+finishDragging : Mouse.Position -> State -> State
+finishDragging pos (State state) =
+    State { state | dragging = False, moving = state.moved }
+
+
+lookAlong : Vec3 -> Vec3 -> State -> State
+lookAlong axis up (State state) =
+    State { state | rotation = Mat4.makeLookAt (vec3 0 0 0) axis up }
 
 
 panMouse : Position -> State -> State
