@@ -33,40 +33,6 @@ type Msg
     | CameraMsg Camera.Msg
 
 
-graph : Maybe SurfaceGraph.Graph
-graph =
-    GraphExamples.fulleroidI_5_12
-
-
-embedder : Embed.Embedder
-embedder =
-    Embed.molecular
-
-
-mesh : Embed.Embedder -> Maybe Graph -> WebGL.Mesh Renderer.Vertex
-mesh embedder gr =
-    case gr of
-        Nothing ->
-            WebGL.lines []
-
-        Just adj ->
-            let
-                pos =
-                    embedder adj
-
-                meshVertex v =
-                    let
-                        p =
-                            Embed.getPos v pos
-                    in
-                        { color = (vec3 1 1 1), pos = p, normal = p }
-
-                meshEdge ( v, w ) =
-                    ( meshVertex v, meshVertex w )
-            in
-                WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
-
-
 init : ( Model, Cmd Msg )
 init =
     ( { size = { width = 0, height = 0 }
@@ -76,18 +42,6 @@ init =
       }
     , Task.perform ResizeMsg Window.size
     )
-
-
-initMaterial : Renderer.Material
-initMaterial =
-    { ambientColor = vec3 1 1 2
-    , diffuseColor = vec3 1 1 1
-    , specularColor = vec3 1 1 1
-    , ka = 0.1
-    , kd = 1.0
-    , ks = 0.2
-    , shininess = 20.0
-    }
 
 
 subscriptions : Model -> Sub Msg
@@ -195,3 +149,49 @@ main =
         , subscriptions = subscriptions
         , update = update
         }
+
+
+graph : Maybe SurfaceGraph.Graph
+graph =
+    GraphExamples.fulleroidI_5_12
+
+
+embedder : Embed.Embedder
+embedder =
+    Embed.molecular
+
+
+mesh : Embed.Embedder -> Maybe Graph -> WebGL.Mesh Renderer.Vertex
+mesh embedder gr =
+    case gr of
+        Nothing ->
+            WebGL.lines []
+
+        Just adj ->
+            let
+                pos =
+                    embedder adj
+
+                meshVertex v =
+                    let
+                        p =
+                            Embed.getPos v pos
+                    in
+                        { color = (vec3 1 1 1), pos = p, normal = p }
+
+                meshEdge ( v, w ) =
+                    ( meshVertex v, meshVertex w )
+            in
+                WebGL.lines <| List.map meshEdge <| SurfaceGraph.edges adj
+
+
+initMaterial : Renderer.Material
+initMaterial =
+    { ambientColor = vec3 1 1 2
+    , diffuseColor = vec3 1 1 1
+    , specularColor = vec3 1 1 1
+    , ka = 0.1
+    , kd = 1.0
+    , ks = 0.2
+    , shininess = 20.0
+    }
