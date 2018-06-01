@@ -76,7 +76,7 @@ updateCameraState fn model =
     { model | cameraState = fn model.cameraState } ! []
 
 
-setModifiers : Int -> Bool -> Model -> Model
+setModifiers : Char.KeyCode -> Bool -> Model -> Model
 setModifiers keyCode value model =
     let
         oldModifiers =
@@ -88,6 +88,52 @@ setModifiers keyCode value model =
             { model | modifiers = { oldModifiers | ctrl = value } }
         else
             model
+
+
+handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
+handleKeyPress code model =
+    let
+        char =
+            Char.toLower <| Char.fromCode code
+    in
+        case char of
+            'a' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 0 -1 -1) (vec3 0 1 0))
+                    model
+
+            'b' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 -1 0 -1) (vec3 0 1 0))
+                    model
+
+            'c' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 -1 -1 0) (vec3 0 1 0))
+                    model
+
+            'd' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 -1 -1 -1) (vec3 0 1 0))
+                    model
+
+            'x' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 -1 0 0) (vec3 0 1 0))
+                    model
+
+            'y' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 0 -1 0) (vec3 0 0 -1))
+                    model
+
+            'z' ->
+                updateCameraState
+                    (Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
+                    model
+
+            _ ->
+                model ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -123,51 +169,7 @@ update msg model =
             setModifiers code True model ! []
 
         KeyUpMsg code ->
-            let
-                tmpModel =
-                    setModifiers code False model
-
-                char =
-                    Char.toLower <| Char.fromCode code
-            in
-                case char of
-                    'a' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 0 -1 -1) (vec3 0 1 0))
-                            tmpModel
-
-                    'b' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 -1 0 -1) (vec3 0 1 0))
-                            tmpModel
-
-                    'c' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 -1 -1 0) (vec3 0 1 0))
-                            tmpModel
-
-                    'd' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 -1 -1 -1) (vec3 0 1 0))
-                            tmpModel
-
-                    'x' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 -1 0 0) (vec3 0 1 0))
-                            tmpModel
-
-                    'y' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 0 -1 0) (vec3 0 0 -1))
-                            tmpModel
-
-                    'z' ->
-                        updateCameraState
-                            (Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
-                            tmpModel
-
-                    _ ->
-                        tmpModel ! []
+            handleKeyPress code <| setModifiers code False model
 
 
 view : Model -> Html Msg
