@@ -7,7 +7,7 @@ import Html.Attributes
 import Html.Events
 import Keyboard
 import Mouse
-import Math.Vector3 exposing (vec3)
+import Math.Vector3 exposing (vec3, Vec3)
 import Task
 import Time exposing (Time)
 import WebGL
@@ -76,6 +76,43 @@ updateCameraState fn model =
     { model | cameraState = fn model.cameraState } ! []
 
 
+lookAlong : Vec3 -> Vec3 -> Model -> ( Model, Cmd Msg )
+lookAlong axis up model =
+    updateCameraState (Camera.lookAlong axis up) model
+
+
+handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
+handleKeyPress code model =
+    let
+        char =
+            Char.toLower <| Char.fromCode code
+    in
+        case char of
+            'a' ->
+                lookAlong (vec3 0 -1 -1) (vec3 0 1 0) model
+
+            'b' ->
+                lookAlong (vec3 -1 0 -1) (vec3 0 1 0) model
+
+            'c' ->
+                lookAlong (vec3 -1 -1 0) (vec3 0 1 0) model
+
+            'd' ->
+                lookAlong (vec3 -1 -1 -1) (vec3 0 1 0) model
+
+            'x' ->
+                lookAlong (vec3 -1 0 0) (vec3 0 1 0) model
+
+            'y' ->
+                lookAlong (vec3 0 -1 0) (vec3 0 0 -1) model
+
+            'z' ->
+                lookAlong (vec3 0 0 -1) (vec3 0 1 0) model
+
+            _ ->
+                model ! []
+
+
 setModifiers : Char.KeyCode -> Bool -> Model -> Model
 setModifiers keyCode value model =
     let
@@ -88,52 +125,6 @@ setModifiers keyCode value model =
             { model | modifiers = { oldModifiers | ctrl = value } }
         else
             model
-
-
-handleKeyPress : Char.KeyCode -> Model -> ( Model, Cmd Msg )
-handleKeyPress code model =
-    let
-        char =
-            Char.toLower <| Char.fromCode code
-    in
-        case char of
-            'a' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 0 -1 -1) (vec3 0 1 0))
-                    model
-
-            'b' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 -1 0 -1) (vec3 0 1 0))
-                    model
-
-            'c' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 -1 -1 0) (vec3 0 1 0))
-                    model
-
-            'd' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 -1 -1 -1) (vec3 0 1 0))
-                    model
-
-            'x' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 -1 0 0) (vec3 0 1 0))
-                    model
-
-            'y' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 0 -1 0) (vec3 0 0 -1))
-                    model
-
-            'z' ->
-                updateCameraState
-                    (Camera.lookAlong (vec3 0 0 -1) (vec3 0 1 0))
-                    model
-
-            _ ->
-                model ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
