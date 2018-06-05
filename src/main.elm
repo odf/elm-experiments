@@ -143,18 +143,14 @@ update msg model =
             updateCameraState (Camera.finishDragging pos) model
 
         MouseMoveMsg pos ->
-            let
-                alter =
-                    model.modifiers.shift
-            in
-                updateCameraState (Camera.setMousePosition pos alter) model
+            updateCameraState
+                (Camera.setMousePosition pos model.modifiers.shift)
+                model
 
         WheelMsg val ->
-            let
-                alter =
-                    model.modifiers.shift
-            in
-                updateCameraState (Camera.updateZoom val alter) model
+            updateCameraState
+                (Camera.updateZoom val model.modifiers.shift)
+                model
 
         KeyDownMsg code ->
             setModifiers code True model ! []
